@@ -9,7 +9,7 @@ from datetime import datetime
 
 # ── CONFIG ──────────────────────────────────────────────────────────────────
 SITE_DIR = os.path.dirname(os.path.abspath(__file__))
-BASE_URL = "https://carlostrujilloglz1991.github.io/aria-seo-site"
+BASE_URL = "https://aria-capital.github.io/aria-seo-site"
 GUMROAD_URL = "https://carrierostrujilloglz1991.gumroad.com/"  # update if slug differs
 SKIP_FILES = {
     "index.html", "all-articles.html", "about.html", "contact.html",

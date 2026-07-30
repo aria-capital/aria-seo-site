@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://carlostrujilloglz1991.github.io/aria-seo-site/sitemap.xml
+Sitemap: https://aria-capital.github.io/aria-seo-site/sitemap.xml

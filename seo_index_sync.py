@@ -43,7 +43,7 @@ from datetime import date
 HERE = os.path.dirname(os.path.abspath(__file__))
 INDEX = os.path.join(HERE, "index.html")
 SITEMAP = os.path.join(HERE, "sitemap.xml")
-BASE_URL = "https://carlostrujilloglz1991.github.io/aria-seo-site/"
+BASE_URL = "https://aria-capital.github.io/aria-seo-site/"
 
 # Pages that are not articles and must never get a card.
 META_PAGES = {

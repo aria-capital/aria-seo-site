@@ -107,10 +107,10 @@ def main():
     log.info(out or err)
 
     log.info("PUSH COMPLETE. GitHub Pages will rebuild in ~60 seconds.")
-    log.info("Check: https://carlostrujilloglz1991.github.io/aria-seo-site/")
+    log.info("Check: https://aria-capital.github.io/aria-seo-site/")
     print("\n" + "=" * 60)
     print(f"  DONE — {changed_files} files pushed.")
-    print(f"  Site URL: https://carlostrujilloglz1991.github.io/aria-seo-site/")
+    print(f"  Site URL: https://aria-capital.github.io/aria-seo-site/")
     print(f"  Log:      {LOG_FILE}")
     print("=" * 60)
 
