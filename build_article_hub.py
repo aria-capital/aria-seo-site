@@ -13,6 +13,8 @@ import re
 from datetime import date
 from pathlib import Path
 
+from safe_write import safe_write_html
+
 HERE = Path(__file__).resolve().parent
 EXCLUDE = {"index.html", "all-articles.html", "404.html", "google-verify.html",
            "about.html", "contact.html", "privacy-policy.html", "privacy.html",
@@ -106,7 +108,7 @@ footer a{{color:#9ca3af;text-decoration:none}}
 </body>
 </html>""")
     out = HERE / "all-articles.html"
-    out.write_text("\n".join(parts), encoding="utf-8")
+    safe_write_html(str(out), "\n".join(parts))
     print(f"Wrote {out.name}: {n} articles in {len(ordered)} categories")
     for c in ordered:
         print(f"  {c}: {len(cats[c])}")

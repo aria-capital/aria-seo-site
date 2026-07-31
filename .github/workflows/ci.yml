@@ -1,0 +1,35 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dev dependencies
+        run: pip install -r requirements-dev.txt
+
+      - name: Unit tests
+        run: python -m pytest -q
+
+      # Gates on regression, not on cleanliness: 449 articles are already damaged
+      # by writers that predate safe_write.py. Existing damage is recorded in
+      # tests/corpus_baseline.json and grandfathered; this fails only if a file
+      # gets worse, or a file with no baseline entry is anything but clean.
+      - name: HTML corpus regression gate
+        run: python check_article_corpus.py
+
+      # Informational: reports the known index.html damage without blocking the
+      # build. Flip to a required step once index.html is repaired.
+      - name: Site integrity report (non-blocking)
+        continue-on-error: true
+        run: python check_site_integrity.py

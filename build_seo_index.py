@@ -7,6 +7,8 @@ import os
 import re
 from datetime import datetime
 
+from safe_write import safe_write_html, safe_write_sitemap
+
 # ── CONFIG ──────────────────────────────────────────────────────────────────
 SITE_DIR = os.path.dirname(os.path.abspath(__file__))
 BASE_URL = "https://aria-capital.github.io/aria-seo-site"
@@ -334,15 +336,13 @@ def main():
     # Write all-articles.html
     html = build_all_articles_html(articles)
     out_html = os.path.join(SITE_DIR, "all-articles.html")
-    with open(out_html, "w", encoding="utf-8") as f:
-        f.write(html)
+    safe_write_html(out_html, html)
     print(f"Written: {out_html}")
 
     # Write sitemap.xml
     xml = build_sitemap_xml(articles)
     out_xml = os.path.join(SITE_DIR, "sitemap.xml")
-    with open(out_xml, "w", encoding="utf-8") as f:
-        f.write(xml)
+    safe_write_sitemap(out_xml, xml)
     print(f"Written: {out_xml}")
     print(f"Sitemap contains {len(articles) + 3} URLs (articles + 3 main pages).")
     print("Done. Review files, then run PUSH_SEO_FULL.bat.")

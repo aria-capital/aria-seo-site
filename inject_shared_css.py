@@ -23,6 +23,8 @@ import sys
 import argparse
 from pathlib import Path
 
+from safe_write import safe_write_html
+
 # -- Config -------------------------------------------------------------------
 SITE_DIR     = Path(__file__).parent
 CSS_LINK     = '<link rel="stylesheet" href="aria_style.css">'
@@ -212,7 +214,7 @@ def main():
             if dry_run:
                 print(f'  [WOULD CHANGE] {fpath.name}')
             else:
-                fpath.write_text(content, encoding='utf-8')
+                safe_write_html(str(fpath), content, allow_preexisting=True)
                 print(f'  [UPDATED] {fpath.name}')
 
     # Summary

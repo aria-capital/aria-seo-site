@@ -3,6 +3,7 @@
 __pycache__/
 *.pyc
 *.pyo
+.pytest_cache/
 
 # Build / generator scratch + marker files
 *.tmp

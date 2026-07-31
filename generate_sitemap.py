@@ -13,6 +13,8 @@ import re
 from datetime import datetime, timezone
 from pathlib import Path
 
+from safe_write import safe_write_sitemap, safe_write_text
+
 HERE = Path(__file__).resolve().parent
 
 # Low-priority static pages get a different changefreq/priority.
@@ -71,14 +73,14 @@ def build() -> tuple[int, str]:
         + "\n".join(rows)
         + "\n</urlset>\n"
     )
-    (HERE / "sitemap.xml").write_text(sitemap, encoding="utf-8")
+    safe_write_sitemap(str(HERE / "sitemap.xml"), sitemap)
 
     robots = (
         "User-agent: *\n"
         "Allow: /\n\n"
         f"Sitemap: {base}sitemap.xml\n"
     )
-    (HERE / "robots.txt").write_text(robots, encoding="utf-8")
+    safe_write_text(str(HERE / "robots.txt"), robots)
 
     return len(html_files), base
 
