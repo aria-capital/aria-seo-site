@@ -120,6 +120,44 @@ content is factually correct, and whether the site's overall model is sound. Tho
 lawyer, an accountant, and a clinician respectively. Say so plainly rather than implying
 that a green test suite is legal safety — it is not.
 
+## Lessons paid for in mistakes
+
+Each of these cost real work to learn. They are here so the next session does not re-buy them.
+
+**Verify the mechanism exists before optimizing which variant is correct.** Hours went into
+determining which AdSense publisher ID was authoritative — provenance, git archaeology, a
+1,460-page rewrite, then a full revert. The whole question was moot: there is not a single
+`<ins class="adsbygoogle">` ad unit anywhere in 1,477 files. Every page carries only the
+loader, and a loader with no slots renders nothing. The argument was about the label on an
+empty box. Ask "does this work at all?" before "which version of this is right?"
+
+**ads.txt is fetched from the ROOT of the host, never a project subpath.**
+`aria-capital.github.io/ads.txt` is authoritative and lives in the *aria-capital.github.io*
+repo, which is a separate repository. The `ads.txt` in THIS repo sits at
+`/aria-seo-site/ads.txt`, no crawler reads it, and it must never be used as evidence of
+which account is real. Reasoning from it produced a confident, wrong, 1,460-page change.
+Fetch both files before touching a publisher ID.
+
+**Do not excise what can be restored.** The truncation repair discarded damaged trailing
+blocks wholesale. That was right for promo boilerplate and wrong for the newsletter block —
+171 email-capture forms, the site's mailing list, deleted as if they were noise. They turned
+out to be byte-exact prefixes of two canonical templates and were fully recoverable. Before
+discarding a damaged block, check whether the healthy corpus or git history can complete it.
+
+**Check exit codes directly.** `pytest -q | tail -3` always exits 0, because the pipeline
+reports `tail`'s status. A failing test was committed and pushed behind that mask, and CI
+caught what the local run had hidden. Never gate a commit on a piped command.
+
+**Confident inference is still inference.** The AdSense ID was chosen by git provenance and
+was wrong. The Amazon tag `ariacapital-20` was chosen the same way and is still UNVERIFIED —
+nobody has read the Associates console. Reasoning from repo evidence is the right method when
+no better source exists, but label it as inference and say what would settle it.
+
+**The site is one limb of a larger system.** `company_auditor.py`, `president.py`,
+`trade_journal.py`, `../.env.aria`, a parent `CLAUDE.md`, and a recurring "Session Brief" all
+live outside this repo and are not visible from a session scoped to it. Ask for what is
+missing rather than inferring the whole from the part.
+
 ## Known issues (as of the test-coverage work)
 
 Documented by tests rather than fixed, to keep changes reviewable:
