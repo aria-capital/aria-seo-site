@@ -202,6 +202,41 @@ Start here:
 - `aria-machine-roles.md`, `aria-how-to-stop-things-safely.md` — operational runbooks
 - folder `AI Context` = `1S-2SwBgCVLZ5iUQpXghyFIJeJPMl5pa_`; `projects` = `1z2_X426wtQCJ9BqzG2h-2BGIA6VD5gn9`
 
+### What the vault settles about money — read this before optimizing anything
+
+Sourced from the vault and cross-checked against the repo. **No revenue channel currently
+works.** Fixing the site does not change that; only the owner's account actions do.
+
+- **AdSense is not approved, and may never have been applied for.** `adsense_tracker.json`
+  (07-30) says PENDING with a dashboard URL containing the literal string `pub-PENDING`,
+  while `carlos_actions.json` still lists "Apply to Google AdSense" as an open to-do. The
+  2026-07-22 org rename also means the site must be re-added as a new property. There are
+  zero `<ins class="adsbygoogle">` units in the corpus — only the loader. **No ad can serve.**
+- **Amazon Associates enrolment probably never happened.** `ariacapital-20` is the intended
+  tag and all 72 links carry it, but "Sign up for Amazon Associates" is still open in
+  `carlos_actions.json` (07-30). If unenrolled, every one of those links earns nothing.
+- **Zero affiliate programs are approved.** `ARIA_AFFILIATE_LINKS.txt` — the file meant to
+  hold real referral URLs — is blank. This is why 8 fabricated `?via=aria` links existed and
+  were removed; do not re-add a referral link until a program has actually approved.
+- **Gumroad lifetime revenue is $14.00, one sale**, on a product that shipped broken
+  (duplicate PDFs, iOS black-screen), with a refund owed and apparently never issued. Six
+  product slugs were deleted 2026-07-15 — any link to them 404s.
+- **Google has not indexed a single article.** `SEO_TRAFFIC_AUDIT.md` (07-24). The
+  mechanical cause (robots/sitemap/canonicals aimed at the dead pre-rename host) is fixed
+  and live, but indexing since then is unmeasured.
+
+**The plan of record is `plan-30-days-20260728.md`** (Fable, human-reviewed): make the real
+Gumroad products and the best ~700 clinical articles reachable and honest; **build nothing
+new**. Its explicit warning matters here — *do not submit all 1,461 URLs for indexing*: the
+site matches three of Google's four scaled-content-abuse triggers, and a mass submission is
+manual-action bait. Use the curated 934-URL sitemap it describes. (Note: the 379 articles
+that plan quarantines are all still live and serving.)
+
+**ARIA itself is unrun scaffolding, not an operating company.** `intent_router` has a
+lifetime route count of **0** — the front door has never been used. Department health scores
+40/100 with most departments never having run. Treat any machine-generated ARIA dashboard
+number as unreliable; several contradict each other on the same day.
+
 Facts already established from it (dated 2026-07-29, treat as possibly stale):
 - **AdSense is awaiting Google review — not approved.** No ads can serve regardless of
   which publisher ID is on the pages. This is why there are zero ad units.
