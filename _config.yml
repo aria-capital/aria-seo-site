@@ -3,3 +3,18 @@ description: Building passive income stream by stream. Real numbers, no fluff.
 url: https://aria-capital.github.io
 baseurl: /aria-seo-site
 theme: minima
+
+# Keep source, docs and tests out of the published site. NEVER add a "*.txt" glob
+# here: ads.txt and robots.txt must keep serving (AdSense authorization + crawling).
+# NEVER add .nojekyll either — underscore-prefixed files rely on Jekyll's exclusion.
+exclude:
+  - "*.py"
+  - "*.bat"
+  - CLAUDE.md
+  - pytest.ini
+  - requirements-dev.txt
+  - new_articles_batch1.txt
+  - new_articles_batch2.txt
+  - new_articles_batch3.txt
+  - new_articles_buyer_intent.txt
+  - tests

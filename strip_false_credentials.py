@@ -138,6 +138,15 @@ REWRITES = [
     # Newsletter promo; deleting the clause mid-sentence breaks it.
     (re.compile(r"weekly updates from an ICU nurse building income streams", re.I),
      "weekly updates on building income streams"),
+    # The exact sentence commit c795a01 stripped from 1,486 files. It missed two, which is
+    # the failure mode this codebase keeps repeating: a partial remediation that leaves the
+    # claim live while establishing that it was known to be false.
+    (re.compile(r"\s*This article was created with AI assistance and reviewed for clinical accuracy\.\s*", re.I),
+     ""),
+    # about.html asserts a staff of credentialed professionals that does not exist.
+    (re.compile(r"was created by a team of healthcare and finance professionals dedicated to answering", re.I),
+     "was created to answer"),
+    (re.compile(r"was created to answering", re.I), "was created to answer"),
 ]
 
 # NOT stripped, deliberately: contact.html states "ICU Notebook is written by Carlos — an

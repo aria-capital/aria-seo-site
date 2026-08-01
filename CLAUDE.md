@@ -100,11 +100,10 @@ resolves to a small number of rules that should outrank tidiness, cleverness, or
 1. **Never publish a claim the site cannot support.** Especially professional review or
    authorship of clinical content. This is the top rule, and it has already been violated
    twice (commit c795a01, then the 64 pages this work removed).
-2. **Publish as the entity, never as a named licensed nurse.** The owner holds an RN
-   licence. A Board of Nursing can act against a licensed nurse who publicly disseminates
-   clinical guidance — that is a livelihood risk and it is more probable than the
-   catastrophic scenarios owners tend to worry about. The site is published by ARIA Capital
-   Holdings LLC; keep it that way. Do not re-add personal bylines or credentials.
+2. **Publish as the entity, never as a named individual or a claimed credential.** The site
+   is published by ARIA Capital Holdings LLC; keep it that way. Do not re-add personal
+   bylines, names, or professional credentials to any page — the reasons are on file with
+   the owner and are not restated here, because this repository is public.
 3. **Every clinical page carries a disclaimer.** Enforced by a test. A disclaimer does not
    make wrong content safe, so this is a floor, not a solution.
 4. **Monetization identities must match the ones the platforms authorize.** One AdSense
