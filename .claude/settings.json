@@ -29,5 +29,11 @@
       "Bash(python3 check_article_corpus.py *)",
       "Bash(python3 check_article_corpus.py)"
     ]
+  },
+  "voiceEnabled": true,
+  "voice": {
+    "enabled": true,
+    "mode": "tap",
+    "autoSubmit": false
   }
 }
