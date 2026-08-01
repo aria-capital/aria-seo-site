@@ -18,17 +18,39 @@ def _full(h, s):
     return R.TRIPLES[(h, s)].replace("{H}", h).replace("{S}", s)
 
 
+def _cut_at_line(text, n):
+    """A fragment cut after n complete lines — how the real truncations look."""
+    return "\n".join(text.split("\n")[:n])
+
+
 def test_icu_fragment_is_completed_to_the_icu_template():
     full = _full(H1, S1)
-    out = R.render(full[:400])
+    out = R.render(_cut_at_line(full, 5))
     assert out == full
     assert "<!-- /email-capture -->" in out
 
 
 def test_aria_fragment_is_completed_to_the_aria_template():
     full = _full(H2, S2)
-    out = R.render(full[:400])
+    out = R.render(_cut_at_line(full, 5))
     assert out == full
+
+
+def test_deeper_cuts_still_complete_correctly():
+    """The observed cuts range from line 6 to line 16 of 17."""
+    full = _full(H1, S1)
+    for n in range(4, len(full.split("\n"))):
+        assert R.render(_cut_at_line(full, n)) == full, f"failed at line {n}"
+
+
+def test_cut_before_the_subhead_completes_is_refused():
+    """
+    The heading/subhead must both be whole to identify the template. A shallower cut is
+    refused rather than completed from a partial line. No real fragment cuts this early.
+    """
+    full = _full(H1, S1)
+    assert R.render(full[:400]) is None
+    assert R.render(_cut_at_line(full, 2)) is None
 
 
 def test_aria_template_has_no_end_comment():
