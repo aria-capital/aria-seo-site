@@ -1,4 +1,10 @@
 {
+  "ultracode": true,
+  "effortLevel": "xhigh",
+  "enableWorkflows": true,
+  "workflowSizeGuideline": "large",
+  "skipWorkflowUsageWarning": true,
+  "alwaysThinkingEnabled": true,
   "permissions": {
     "defaultMode": "bypassPermissions",
     "allow": [
