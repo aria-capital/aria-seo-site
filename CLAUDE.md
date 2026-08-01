@@ -146,18 +146,31 @@ truncation-repair specification and the restructure plan, both of which caught d
 main loop had missed — while the main loop kept context, made the judgement calls, and
 carried the work to merge.
 
-Three caveats worth knowing, all unverified at the time of writing:
+These were verified empirically against the installed CLI (v2.1.220), not inferred from the
+schema — the schema's "session-scoped" wording is misleading:
 
-1. The settings schema describes `ultracode` as session-scoped and says interactive toggles
-   never persist it. Setting it in a settings file *should* apply at startup, since settings
-   are read then — but if a session starts without ultracode behaviour, that is the reason,
-   and `effortLevel: "xhigh"` still applies independently.
+1. **`ultracode: true` in project settings genuinely works.** Confirmed in a clean-room test:
+   an isolated config dir with a project `.claude/settings.json` of `{"ultracode": true}`
+   makes `/effort current` report `ultracode (xhigh + dynamic workflow orchestration)`, where
+   the same harness with `{}` reports `auto (currently high)`. The schema's note that
+   "interactive toggles never persist it" is about toggles, not settings files. Settings are
+   merged across `userSettings, projectSettings, localSettings, flagSettings, policySettings`.
 2. **`"max"` is not a valid `effortLevel`.** The settings enum is `low | medium | high |
    xhigh`, so `xhigh` is the ceiling for the main session. (`max` exists only as a per-agent
    `effort` inside the Workflow tool, where it is used for the heaviest verification passes.)
-3. **`ultracode` requires an xhigh-capable model.** The default model is xhigh-capable, so
-   this is satisfied as long as no weaker `model` is pinned in settings — another reason not
-   to re-add that key.
+3. **Project scope is the right home, and user scope would be useless here.** `~/.claude`
+   lives inside the ephemeral container and is rebuilt every boot, so a user-scope write
+   reaches zero future sessions. Only the committed project file survives.
+4. **Known risk — `flagSettings` outranks project settings.** Remote sessions are launched
+   with `--settings /root/.claude/launcher-settings.json`, which the launcher regenerates on
+   every boot and which sits above project scope in precedence. An explicit
+   `"ultracode": false` there would silently defeat the project setting with no warning.
+   Today that file carries no effort keys, so nothing is being overridden. A bare
+   `effortLevel` there does *not* defeat ultracode (the ultracode check short-circuits
+   first); only an explicit `ultracode:false` or a CLI `--effort` flag does.
+5. `skipWorkflowUsageWarning` is not read from project scope at all — only user, local, flag
+   and policy. It is kept in the file anyway because it is harmless, and it is redundant
+   while ultracode is on: the ultracode gate short-circuits before the warning check runs.
 
 ## Standing priorities for this project
 
