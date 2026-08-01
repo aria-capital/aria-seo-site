@@ -30,7 +30,7 @@ existing articles in bulk.
 **Generators** — `build_seo_index.py`, `build_article_hub.py`, `generate_sitemap.py`.
 These create files from scratch.
 
-**Gates** — `check_article_corpus.py` (CI) and `tests/` (121 tests, pytest).
+**Gates** — `check_article_corpus.py` (CI) and `tests/` (234 tests, pytest).
 
 ## Rules
 
@@ -96,7 +96,9 @@ The cookie-banner repair (599 files) is the template for this class of fix:
 
 `.claude/settings.json` in this repo turns on, at session start:
 
-- `model: "fable"` — the owner's chosen default model
+- **no `model` key, deliberately.** The main loop runs the default (strongest) model. An
+  earlier revision pinned `model: "fable"` here; that was a misreading of the owner's intent
+  and was reverted. Do not re-add it — see "Model policy" below.
 - `ultracode: true` and `effortLevel: "xhigh"` — maximum reasoning effort with standing
   dynamic-workflow orchestration, so substantive tasks get fanned out and adversarially
   verified without the owner typing the keyword
@@ -110,6 +112,30 @@ owner, made after finding the prompt volume unworkable. If a future session find
 absent, it is because the session is on a branch that predates them, not because they were
 reconsidered.
 
+### Model policy — stated by the owner, 2026-08-01
+
+> "When you use Fable make sure it's at Max, in the newest model. But you are the default
+> selection, you always Ultracode. Saves so much time, and money when we work smart."
+
+Concretely:
+
+1. **The main loop uses the default model.** Do not pin `model` in settings. The default
+   selection is the strongest available and is what the owner wants driving the session.
+2. **Ultracode is always on.** Reach for the Workflow tool on substantive work rather than
+   grinding serially — that is the time-saving the owner is describing.
+3. **When spawning Fable subagents, always `model: 'fable'` with `effort: 'max'`,** and
+   always the newest Fable. Never a lower effort tier for Fable — if a task is worth handing
+   to Fable, it is worth max.
+4. **Working smart is the point, not maximum spend.** Do not fan out a workflow for a
+   one-line config change or a trivial edit; that burns the budget the orchestration is
+   meant to protect. Reserve fan-out for work with real breadth — investigation across many
+   files, adversarial verification, competing designs.
+
+This division earned its keep in the session that established it: Fable at max produced the
+truncation-repair specification and the restructure plan, both of which caught defects the
+main loop had missed — while the main loop kept context, made the judgement calls, and
+carried the work to merge.
+
 Three caveats worth knowing, all unverified at the time of writing:
 
 1. The settings schema describes `ultracode` as session-scoped and says interactive toggles
@@ -119,10 +145,9 @@ Three caveats worth knowing, all unverified at the time of writing:
 2. **`"max"` is not a valid `effortLevel`.** The settings enum is `low | medium | high |
    xhigh`, so `xhigh` is the ceiling for the main session. (`max` exists only as a per-agent
    `effort` inside the Workflow tool, where it is used for the heaviest verification passes.)
-3. **`ultracode` requires an xhigh-capable model.** If `model: "fable"` turns out not to
-   support xhigh, ultracode will not engage and the session silently falls back. If a session
-   feels shallower than expected, test by removing the `model` line — that is the one-line
-   revert, and it is the first thing to try before assuming the other settings failed.
+3. **`ultracode` requires an xhigh-capable model.** The default model is xhigh-capable, so
+   this is satisfied as long as no weaker `model` is pinned in settings — another reason not
+   to re-add that key.
 
 ## Standing priorities for this project
 
