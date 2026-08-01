@@ -122,13 +122,49 @@ The cookie-banner repair (599 files) is the template for this class of fix:
   verified without the owner typing the keyword
 - `workflowSizeGuideline: "large"` and `skipWorkflowUsageWarning: true` — workflows run
   without a size cap fight or an approval prompt
-- `permissions.defaultMode: "bypassPermissions"` — no approval prompts. The owner asked
-  for this repeatedly and explicitly; do not quietly narrow it.
+- **no `permissions.defaultMode` key** — see the next section. The owner does run without
+  approval prompts; that setting just must not live in a *public* file.
 
 **Do not remove these to "be safe".** They are a deliberate, repeated decision by the repo
 owner, made after finding the prompt volume unworkable. If a future session finds them
 absent, it is because the session is on a branch that predates them, not because they were
 reconsidered.
+
+### Where `bypassPermissions` lives, and why not here
+
+The owner runs with approval prompts off. That is not in question and must not be narrowed.
+But it is configured in **`.claude/settings.local.json`**, which is untracked and gitignored,
+never in the committed `.claude/settings.json`. Two reasons, one of each kind:
+
+- **Ethical.** This repo is public. A committed `defaultMode` disables approval prompts for
+  anyone who clones it, on their machine, without them ever choosing that. The owner's
+  preference is his to make for his machines; it is not his to make for strangers.
+- **Empirical — it was never working here anyway.** Claude Code *refuses* bypass permission
+  modes under root: `--dangerously-skip-permissions cannot be used with root/sudo privileges
+  for security reasons`. Cloud containers run as root, so the committed line had no effect in
+  any cloud session. Verified by clean-room test on CLI 2.1.220, comparing a gated write
+  across user scope, project scope, and the CLI flag — all three blocked identically under
+  root, while the same write succeeded when permitted. It only ever mattered on a normal-user
+  machine, which is exactly where the local file now carries it.
+
+`localSettings` outranks `projectSettings` in the merge order, so the local file is a strict
+upgrade: same effect where it matters, zero publication.
+
+**On a fresh clone (a new Mac, a new machine), the local file does not exist** — it is
+gitignored, so it does not travel. Recreate it once per machine:
+
+```bash
+mkdir -p .claude && cat > .claude/settings.local.json <<'EOF'
+{"permissions": {"defaultMode": "bypassPermissions"}, "skipDangerousModePermissionPrompt": true}
+EOF
+```
+
+Held by `tests/test_claude_settings.py`, which fails if `defaultMode` reappears in the
+committed file, if a `model` key is pinned, if `ultracode`/`effortLevel` are dropped, or if
+the local file stops being ignored by **this repo's own** `.gitignore`. That last one is not
+pedantry: the cloud container ignores the path via a machine-level global gitignore that a
+Mac clone does not have, so without the in-repo rule the file is committable from the Mac and
+the leak returns by accident.
 
 ### Model policy — stated by the owner, 2026-08-01
 
@@ -227,6 +263,27 @@ determining which AdSense publisher ID was authoritative — provenance, git arc
 `<ins class="adsbygoogle">` ad unit anywhere in 1,477 files. Every page carries only the
 loader, and a loader with no slots renders nothing. The argument was about the label on an
 empty box. Ask "does this work at all?" before "which version of this is right?"
+
+**Lead with where the capability exists, not with what you cannot do.** The owner asked
+perhaps six times for Claude to drive his browser and click through AdSense. Each time he got
+an accurate explanation of why a cloud container cannot reach his Mac. All of it was true and
+none of it helped, and he had bought a Mac partly on the belief that it would work. The
+correct first answer was one line: *install Claude Code on the Mac, it drives Chrome there.*
+That took under ten minutes once actually attempted. Hours went into explaining a limitation
+instead of routing around it. When someone asks for something you cannot do, spend the effort
+finding the surface where it IS possible before spending any on the explanation.
+
+**Setup facts learned the same way, so nobody re-derives them:**
+- The install script is at `claude.ai/install.sh`, not `claude.com/install.sh` — the latter 404s.
+- Installing the Chrome extension is not enough. It must be SIGNED IN to the same account, or
+  `list_connected_browsers` returns empty and every browser call fails with "not connected".
+- Settings are read at startup only. Writing `~/.claude/settings.json` mid-session changes
+  nothing until Claude Code is restarted — verify with `/effort current` afterwards.
+- `CLAUDE.md` is only loaded when Claude starts INSIDE the folder containing it. A session
+  launched from the home directory knows none of this file. Clone the repo locally and launch
+  from within it, or the local session is blind while the cloud one is not.
+- The desktop app is the right recommendation for a non-technical owner: same capability as the
+  terminal CLI, but a real window. "It looks like a command tab" is a fair complaint.
 
 **ads.txt is fetched from the ROOT of the host, never a project subpath.**
 `aria-capital.github.io/ads.txt` is authoritative and lives in the *aria-capital.github.io*

@@ -19,3 +19,12 @@ Thumbs.db
 
 # Local logs
 *.log
+
+# Claude Code local settings — machine-specific, never published.
+# The owner runs with approval prompts disabled on machines he owns. That belongs
+# here (localSettings scope, untracked), not in .claude/settings.json, because this
+# repo is PUBLIC and a committed defaultMode ships prompt-free Claude to anyone who
+# clones it. Ignoring it in-repo matters: the cloud container happens to ignore this
+# path via a global gitignore, but a Mac clone does not, so without this line the
+# file would be committable there.
+.claude/settings.local.json
