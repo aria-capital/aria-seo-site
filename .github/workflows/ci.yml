@@ -21,11 +21,11 @@ jobs:
       - name: Unit tests
         run: python -m pytest -q
 
-      # Gates on regression, not on cleanliness: 449 articles are already damaged
-      # by writers that predate safe_write.py. Existing damage is recorded in
-      # tests/corpus_baseline.json and grandfathered; this fails only if a file
-      # gets worse, or a file with no baseline entry is anything but clean.
-      - name: HTML corpus regression gate
+      # This started as a regression gate because 449 articles were already damaged and a
+      # cleanliness gate would have been red from day one. tests/corpus_baseline.json is
+      # now EMPTY — all 1,461 articles are clean — so "no worse than baseline" and "not
+      # damaged at all" are the same check, and any damaged HTML fails the build.
+      - name: HTML corpus gate
         run: python check_article_corpus.py
 
       # index.html and sitemap.xml are now clean, so this is a required gate:

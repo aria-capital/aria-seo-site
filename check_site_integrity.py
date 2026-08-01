@@ -82,13 +82,49 @@ def html_severity(html: str) -> dict:
     "how corrupt?", so a caller can allow a write that leaves a file no worse than
     it found it while still refusing one that makes it worse. Lower is better;
     every value is a non-negative int/bool so metrics compare field by field.
+
+    `block_delta` and `misnested` cover every container tag, not just <div>. They were
+    added after a truncated <footer> in dmca-policy.html and another in
+    nurse-real-estate-investing.html scored as perfectly clean here: only <div> was being
+    counted, so an unclosed <footer>, <main>, <article>, <ol> or <table> was invisible to
+    both gates. Fourteen more files were carrying the same damage.
     """
     return {
         "unterminated": not html.rstrip().endswith("</html>"),
         "div_delta": abs(len(re.findall(r"<div\b", html)) - html.count("</div>")),
         "tag_errors": sum(abs(html.count(t) - 1) for t in ("</head>", "</body>", "</html>")),
         "unterminated_attr": len(re.findall(r'<[a-zA-Z][^>]*?\s[a-zA-Z-]+="[^"\n]*$', html, re.M)),
+        "block_delta": sum(
+            abs(len(re.findall(r"<%s\b" % t, html)) - html.count("</%s>" % t))
+            for t in CONTAINER_TAGS
+            if t != "div"
+        ),
+        "misnested": _misnested(html),
     }
+
+
+# Elements that must nest. <p>, <li> and <td> are deliberately absent: the corpus closes
+# them loosely — a stray </p> with no <p> is the house style inside every callout — so
+# counting them would report damage that is not there.
+CONTAINER_TAGS = (
+    "div", "main", "article", "section", "aside", "nav", "header", "footer",
+    "ol", "ul", "table", "form", "figure", "blockquote",
+)
+_NESTING_TOKEN = re.compile(r"</?(%s)\b[^>]*>" % "|".join(CONTAINER_TAGS))
+
+
+def _misnested(html: str) -> bool:
+    """True if some closing tag does not close the innermost element that is open."""
+    stack: list[str] = []
+    for m in _NESTING_TOKEN.finditer(html):
+        token, name = m.group(0), m.group(1)
+        if token.startswith("</"):
+            if not stack or stack[-1] != name:
+                return True
+            stack.pop()
+        elif not token.endswith("/>"):
+            stack.append(name)
+    return bool(stack)
 
 
 def severity_regressions(before: dict, after: dict) -> list[str]:

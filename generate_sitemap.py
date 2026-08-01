@@ -24,7 +24,17 @@ EXCLUDE = {"404.html", "google-verify.html"}
 
 
 def read_base_url() -> str:
-    """Build the canonical base URL from _config.yml (url + baseurl)."""
+    """
+    Build the canonical base URL from _config.yml (url + baseurl).
+
+    Raises if _config.yml has no usable `url:`. This used to fall back to
+    "https://carlostrujillo.github.io" — a host the site has never been served from; the
+    org was renamed to aria-capital in July 2026 and the old username is dead for Pages.
+    A missing or reshaped config would therefore have written 1,461 <loc> entries pointing
+    at a domain that does not resolve, and nothing would have caught it: the integrity
+    check only verifies that each <loc>'s slug maps to a real local file, which stays true
+    no matter which host is in front of it. Failing loudly is the only safe default.
+    """
     url, baseurl = "", ""
     cfg = HERE / "_config.yml"
     if cfg.exists():
@@ -36,7 +46,10 @@ def read_base_url() -> str:
         if m:
             baseurl = m.group(1).strip().strip('"').strip("'")
     if not url:
-        url = "https://carlostrujillo.github.io"
+        raise SystemExit(
+            f"Refusing to build a sitemap: no 'url:' in {cfg}. Every <loc> would point at "
+            "a guessed host, and no check downstream would notice."
+        )
     if baseurl and not baseurl.startswith("/"):
         baseurl = "/" + baseurl
     return f"{url}{baseurl}".rstrip("/") + "/"

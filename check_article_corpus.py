@@ -3,23 +3,28 @@
 check_article_corpus.py — CI gate for the 1,400+ article HTML corpus.
 
 WHY THIS EXISTS
-`check_site_integrity.py` answers "is the site clean?" and the honest answer is
-no: 449 articles are still damaged, most of them truncated by writers that ran
-before safe_write.py was wired in. A gate that demands cleanliness would be red
-on every build from day one, and a permanently-red gate is a gate everyone learns
-to ignore.
+This began as a regression gate rather than a cleanliness gate. When it was written, 449
+articles were already damaged — mostly truncated by writers that ran before safe_write.py
+was wired in — and a gate demanding cleanliness would have been red on every build from
+day one. A permanently-red gate is one everyone learns to ignore, which is the exact
+failure mode that let the truncation bug run for months.
 
-So this gates on *regression* instead. A committed baseline records the damage
-that already exists; the build fails only when a file gets worse than its
-baseline, or when a file with no baseline entry is anything other than clean.
-That makes the invariant enforceable today: existing damage is grandfathered and
-can be paid down at leisure, but no change may introduce new corruption.
+So a committed baseline recorded the damage that already existed, and the build failed
+only when a file got worse than its baseline, or when a file with no baseline entry was
+anything other than clean. Existing damage was paid down at leisure; new damage was
+impossible.
 
-As files are repaired, refresh the baseline (--update-baseline) so the repaired
-state becomes the new floor and can never silently regress.
+**The baseline is now empty.** Every one of the 1,461 articles is clean, so "no file may be
+worse than its baseline" and "no file may be damaged" are the same statement, and this is a
+cleanliness gate without a line of it changing.
+
+The one way that could quietly unwind is a careless --update-baseline re-recording fresh
+damage as the new floor. That is now refused: the baseline can only ever be moved down.
+--allow-new-damage overrides it, deliberately loudly, if damage ever has to be
+grandfathered again.
 
 USAGE
-    python3 check_article_corpus.py                   # CI gate; exit 1 on regression
+    python3 check_article_corpus.py                   # CI gate; exit 1 on any damage
     python3 check_article_corpus.py --update-baseline # re-record after repairs
 """
 from __future__ import annotations
@@ -69,22 +74,37 @@ def write_baseline(current: dict[str, dict]) -> None:
         fh.write("\n")
 
 
-def main() -> int:
-    current = scan()
-
-    if "--update-baseline" in sys.argv:
-        write_baseline(current)
-        print(f"baseline updated: {len(current)} damaged files recorded -> {BASELINE}")
-        return 0
-
-    baseline = load_baseline()
-    failures: list[str] = []
-
+def regressions(baseline: dict[str, dict], current: dict[str, dict]) -> list[str]:
+    """One message per file that is worse than the baseline records it."""
+    out: list[str] = []
     for name, sev in sorted(current.items()):
         worse = severity_regressions(baseline.get(name, {}), sev)
         if worse:
             kind = "regressed" if name in baseline else "newly damaged"
-            failures.append(f"{name} ({kind}): " + "; ".join(worse))
+            out.append(f"{name} ({kind}): " + "; ".join(worse))
+    return out
+
+
+def main() -> int:
+    current = scan()
+    baseline = load_baseline()
+    failures = regressions(baseline, current)
+
+    if "--update-baseline" in sys.argv:
+        # The baseline may only ever move DOWN. Re-recording fresh damage as the new floor
+        # is the one way a green gate could quietly stop meaning anything, so it takes an
+        # explicit flag rather than a habit.
+        if failures and "--allow-new-damage" not in sys.argv:
+            print(f"REFUSING to update the baseline — {len(failures)} file(s) are worse "
+                  f"than it already records:")
+            for f in failures:
+                print("  -", f)
+            print("\nRepair them, or pass --allow-new-damage to grandfather the damage "
+                  "deliberately.")
+            return 1
+        write_baseline(current)
+        print(f"baseline updated: {len(current)} damaged files recorded -> {BASELINE}")
+        return 0
 
     fixed = sorted(set(baseline) - set(current))
 
@@ -100,7 +120,10 @@ def main() -> int:
             print("  -", f)
         return 1
 
-    print("PASS — no HTML file is more damaged than its baseline.")
+    if not baseline:
+        print(f"PASS — all {len(os.listdir(HERE))} entries scanned, zero damaged HTML files.")
+    else:
+        print("PASS — no HTML file is more damaged than its baseline.")
     return 0
 
 

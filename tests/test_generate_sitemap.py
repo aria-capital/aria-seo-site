@@ -55,13 +55,22 @@ def test_commented_url_is_not_picked_up(site):
     assert gs.read_base_url() == "https://example.test/"
 
 
-def test_missing_config_falls_back_to_hardcoded_host(site):
+def test_missing_config_refuses_rather_than_guessing_a_host(site):
     """
-    Documents a live discrepancy: the fallback host is not the deployed host
-    (_config.yml says aria-capital.github.io). If _config.yml ever goes missing,
-    the whole sitemap silently points at a domain the site does not live on.
+    There used to be a fallback to https://carlostrujillo.github.io — a host the site has
+    never been served from, and dead for Pages since the July 2026 org rename. A missing
+    config would have written 1,461 <loc>s at a domain that does not resolve, and no
+    downstream check would have noticed: check_site_integrity only verifies that each
+    <loc>'s slug maps to a real local file, which is true regardless of the host.
     """
-    assert gs.read_base_url() == "https://carlostrujillo.github.io/"
+    with pytest.raises(SystemExit):
+        gs.read_base_url()
+
+
+def test_config_without_a_url_key_also_refuses(site):
+    (site / "_config.yml").write_text("baseurl: /my-site\n", encoding="utf-8")
+    with pytest.raises(SystemExit):
+        gs.read_base_url()
 
 
 # --- build() ----------------------------------------------------------------

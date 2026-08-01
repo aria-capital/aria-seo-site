@@ -89,7 +89,16 @@ def article_files() -> list[str]:
 
 
 def linked_in_index(index_html: str) -> set[str]:
-    return set(re.findall(r'href="([a-z0-9\-]+\.html)"', index_html))
+    """
+    Every local .html file index.html already links to.
+
+    The character class deliberately excludes ':' '/' '?' '#' rather than allow-listing
+    [a-z0-9-]: the narrow version missed privacy_policy.html, the one filename in the
+    corpus with an underscore, so it read as unlinked and got re-added as an orphan card
+    on every single run. That makes the whole script non-idempotent, which is the one
+    property a bulk mutator here is required to have.
+    """
+    return set(re.findall(r'href="([^":/?#]+\.html)"', index_html))
 
 
 def extract_title(doc: str, fallback_name: str) -> str:
