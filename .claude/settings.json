@@ -1,5 +1,6 @@
 {
   "permissions": {
+    "defaultMode": "bypassPermissions",
     "allow": [
       "mcp__Google_Drive__search_files",
       "mcp__Google_Drive__read_file_content",
