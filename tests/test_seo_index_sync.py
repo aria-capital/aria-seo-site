@@ -6,6 +6,9 @@ promise is the thing worth pinning. The card builder also interpolates article
 titles and descriptions straight into markup, which makes escaping a correctness
 issue rather than a cosmetic one.
 """
+import os
+import re
+
 import pytest
 
 import seo_index_sync as sync
@@ -138,10 +141,35 @@ def test_linked_articles_are_discovered():
     assert sync.linked_in_index('<a href="nurse-pay-2026.html">x</a>') == {"nurse-pay-2026.html"}
 
 
-def test_link_discovery_misses_underscored_filenames():
+def test_link_discovery_finds_underscored_filenames():
     """
-    Documents a real gap: the href pattern allows only [a-z0-9-], so a page like
-    privacy_policy.html reads as unlinked and would be re-added as an orphan card
-    on every run. Any fix should make this test assert the opposite.
+    The href pattern used to allow only [a-z0-9-], so privacy_policy.html — the one
+    underscored filename in the corpus — read as unlinked and got re-added as an orphan
+    card on every run, making the script non-idempotent.
     """
-    assert sync.linked_in_index('<a href="privacy_policy.html">x</a>') == set()
+    assert sync.linked_in_index('<a href="privacy_policy.html">x</a>') == {"privacy_policy.html"}
+
+
+def test_link_discovery_finds_mixed_case_filenames():
+    assert sync.linked_in_index('<a href="README.html">x</a>') == {"README.html"}
+
+
+def test_link_discovery_ignores_external_and_anchored_links():
+    """Only local files count — an off-site URL is not an article the index has covered."""
+    html = (
+        '<a href="https://example.test/other.html">x</a>'
+        '<a href="sub/dir/page.html">y</a>'
+        '<a href="page.html#section">z</a>'
+        '<a href="real-article.html">ok</a>'
+    )
+    assert sync.linked_in_index(html) == {"real-article.html"}
+
+
+def test_link_discovery_is_idempotent_against_the_live_index():
+    """Every article index.html links to must be seen, or the next run duplicates its card."""
+    here = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    with open(os.path.join(here, "index.html"), encoding="utf-8") as fh:
+        index = fh.read()
+    linked = sync.linked_in_index(index)
+    for href in re.findall(r'href="([^":/?#]+\.html)"', index):
+        assert href in linked, href

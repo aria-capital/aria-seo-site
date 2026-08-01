@@ -27,10 +27,16 @@ framing drives every rule below.
 `seo_index_sync.py`, `apply_affiliate_tag.py`, `fix_cookie_banner.py`. These rewrite
 existing articles in bulk.
 
+**Repairs** — `fix_truncated_articles.py`, `restore_newsletter_blocks.py`,
+`restore_truncated_footers.py`, `restore_truncated_blocks.py`, `close_unclosed_blocks.py`,
+`fix_index_html.py`. One-time fixes for a specific class of damage. All are idempotent and
+have run to completion; they are kept so the repair is reviewable and re-runnable, not
+because there is work left for them.
+
 **Generators** — `build_seo_index.py`, `build_article_hub.py`, `generate_sitemap.py`.
 These create files from scratch.
 
-**Gates** — `check_article_corpus.py` (CI) and `tests/` (234 tests, pytest).
+**Gates** — `check_article_corpus.py` (CI) and `tests/` (276 tests, pytest).
 
 ## Rules
 
@@ -80,6 +86,18 @@ So both gates compare against a recorded floor instead:
 Existing damage is paid down at leisure; new damage is impossible. **After repairing files,
 run `python check_article_corpus.py --update-baseline`** so the improvement becomes the new
 floor and can never silently regress.
+
+**The floor is now zero.** `tests/corpus_baseline.json` is empty: all 1,461 articles are
+clean. "No worse than baseline" and "not damaged at all" are therefore the same statement,
+and the regression gate has become a cleanliness gate without a line of it changing.
+
+Two consequences worth keeping in mind:
+- `--update-baseline` now **refuses** to record a file that got worse. That was the one way
+  a green gate could quietly stop meaning anything — re-record the damage as the new floor
+  and every later regression is laundered through it. `--allow-new-damage` overrides it if
+  damage ever genuinely has to be grandfathered again.
+- Don't reintroduce grandfathering casually. The empty baseline is the asset; a single
+  careless entry gives back the property that took three repair passes to earn.
 
 ### Repair pattern that works
 
@@ -227,6 +245,21 @@ discarding a damaged block, check whether the healthy corpus or git history can 
 reports `tail`'s status. A failing test was committed and pushed behind that mask, and CI
 caught what the local run had hidden. Never gate a commit on a piped command.
 
+**A green gate only means what it measures.** `html_severity()` counted `<div>` and nothing
+else, so both gates scored `dmca-policy.html` and `nurse-real-estate-investing.html` as
+perfectly clean while each carried a `<footer>` truncated mid-word. Sixteen more files were
+hiding the same way behind unclosed `<main>`, `<article>`, `<ol>` and `<table>` tags. Nothing
+was wrong with the gate's logic — it was answering a narrower question than the one everyone
+was reading it as. When a check reports clean, ask what it does not look at; the damage that
+survives is exactly the damage that falls outside the metric.
+
+**Measure the rule against the healthy corpus before running it on the broken one.** Every
+repair rule in `close_unclosed_blocks.py` was first checked against the 1,334 files that were
+already fine, where the right answer is known: the leaf rule predicted the true position of
+the closing tag for 2,347 of 2,355 blocks, and the 8 misses became the refusal condition
+rather than a bug found later. A rule with a measured error rate can be given a matching
+guard; a rule that merely looks correct cannot.
+
 **Confident inference is still inference.** The AdSense ID was chosen by git provenance and
 was wrong. The Amazon tag `ariacapital-20` was chosen the same way and is still UNVERIFIED —
 nobody has read the Associates console. Reasoning from repo evidence is the right method when
@@ -301,26 +334,48 @@ Facts already established from it (dated 2026-07-29, treat as possibly stale):
 plaintext. Flagged to the owner; do not echo credential values from vault files into
 commits, PR bodies, or chat.
 
-## Known issues (as of the test-coverage work)
+## Closed since the test-coverage work
 
-Documented by tests rather than fixed, to keep changes reviewable:
+Do not re-litigate these; they were measured, not assumed. Each is now held by a test.
 
-- **322 articles still truncated**, cut inside their trailing injected-block region. Article
-  content is intact; `</body></html>` is lost.
-- **`index.html` is damaged** — unbalanced divs, missing `</footer>`. `check_site_integrity.py`
-  fails on it, so CI runs that check non-blocking. Flip it to required once repaired.
-- **AdSense pub ID mismatch**: `ads.txt` declares `pub-6510170611627184`, pages serve
-  `ca-pub-5576001602612111`. Only the owner knows which account is real.
-- **Two Amazon associate tags** live simultaneously (`ariacapital-20`, `aria-affiliate-20`).
-  One of them earns nothing.
-- **`?via=aria` affiliate links** appear to be unreplaced placeholders.
-- **Two scripts both write `sitemap.xml`** (`generate_sitemap.py`, `seo_index_sync.py`) with
-  different base URLs and different schemas. Last one to run wins. Unresolved.
-- **`generate_sitemap.read_base_url()` falls back to a host that is no longer the deployed
-  host** — a missing `_config.yml` would point the whole sitemap at the wrong domain.
-- **`seo_index_sync.linked_in_index()` matches only `[a-z0-9-]` hrefs**, so underscored
-  filenames read as unlinked and get re-added as orphan cards on every run.
-- **192 articles lack `rel="canonical"`; 13 clinical articles lack disclaimer language.**
+- **The HTML corpus is clean.** Zero damaged files out of 1,461, and
+  `tests/corpus_baseline.json` is empty. The last three passes closed 141 files carrying
+  unclosed `<div>`/`<main>`/`<article>`/`<ol>` tags, restored 3 truncated `<footer>` blocks,
+  and put back prose in 7 articles that had been cut mid-sentence.
+- **`index.html` is repaired** and `check_site_integrity.py` is a required CI gate.
+- **AdSense pub ID**: `ads.txt` and all 1,460 pages now agree on `pub-5576001602612111`.
+  (Still no `<ins class="adsbygoogle">` unit anywhere, so nothing can serve either way.)
+- **One Amazon tag**: 72 links, all `ariacapital-20`. `aria-affiliate-20` is gone.
+- **`?via=aria` placeholders**: none left.
+- **Canonicals and disclaimers**: every article has `rel="canonical"`; every clinical page
+  carries disclaimer language.
+- **`generate_sitemap.read_base_url()`** no longer falls back to a dead host — it refuses.
+- **`seo_index_sync.linked_in_index()`** now matches any local href, so `privacy_policy.html`
+  stops reading as an orphan on every run.
+
+## Known issues
+
+- **Two scripts both write `sitemap.xml`** and disagree. `generate_sitemap.py` produces 1,461
+  URLs, `seo_index_sync.py --dry-run` says 1,458 and a different schema; the file on disk
+  matches neither exactly. Last one to run wins. **Unresolved, and do not resolve it by
+  running one of them** — see the sitemap warning in the vault section: the plan of record
+  wants a curated ~934-URL sitemap, not every URL, and a mass submission is manual-action
+  bait. Picking the 934 is the owner's call.
+- **`seo_index_sync.py` would add 852 orphan cards** to `index.html` on its next run. Whether
+  those articles should be linked from the homepage at all is the same curation decision.
+- **`generate_sitemap.build()` writes `sitemap.xml` and `robots.txt` as a side effect**, and
+  its `<lastmod>` comes from file mtime — so merely *calling* it to inspect the output
+  rewrites the live sitemap with today's dates on every article you happen to have touched.
+  This bit during the block-repair work and had to be reverted. It has no `--dry-run`.
+  Use `read_base_url()` if you only want to check the host.
+- **Three articles are still cut off mid-word**, and no revision in git history has the rest:
+  `best-icu-nursing-books-2026` ("…rather than a study gui"),
+  `new-grad-nurse-financial-survival-guide` ("…Employer match captured. Loans"),
+  `roth-ira-for-nurses-complete-guide` ("…inside the account (don't le").
+  Their block tags are closed, so the pages render correctly and the damage is confined to
+  one trailing sentence each. Finishing those sentences means writing content, which is a
+  decision for the owner, not a repair. Everything recoverable was recovered — see
+  `restore_truncated_blocks.py`.
 - **1,255 `.fuse_hidden*` files are committed** — orphans from unclean FUSE unmounts, not
   byte-identical to any live article. Junk, but tracked, so removal is the owner's call.
 - **Three brand identities**: `_config.yml` says "Money Psychology", footers say "ICU
@@ -329,12 +384,15 @@ Documented by tests rather than fixed, to keep changes reviewable:
 ## Commands
 
 ```bash
-python -m pytest -q                              # 121 tests
-python check_article_corpus.py                   # CI gate (regression, not cleanliness)
-python check_article_corpus.py --update-baseline # after repairing files
-python check_site_integrity.py                   # index.html + sitemap.xml (currently fails)
+python -m pytest -q                              # 276 tests
+python check_article_corpus.py                   # CI gate: zero damaged HTML, no exceptions
+python check_article_corpus.py --update-baseline # after repairing files; refuses new damage
+python check_site_integrity.py                   # index.html + sitemap.xml; required in CI
 python fix_cookie_banner.py --dry-run            # every mutator has a dry run
 ```
+
+`pytest` is not preinstalled in a fresh cloud container: `pip install -r requirements-dev.txt`
+first. And check the exit code, never `| tail` — see "Check exit codes directly" below.
 
 ## Environment note
 

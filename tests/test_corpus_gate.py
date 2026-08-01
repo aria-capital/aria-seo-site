@@ -1,9 +1,14 @@
 """
-Tests for check_article_corpus.py — the CI regression gate.
+Tests for check_article_corpus.py — the CI gate.
 
-A gate nobody has proven can fail is not a gate. These drive main() through each
-outcome it is supposed to distinguish: grandfathered damage passes, new damage
-fails, worsened damage fails, and repairs are reported rather than punished.
+A gate nobody has proven can fail is not a gate. These drive main() through each outcome it
+is supposed to distinguish: grandfathered damage passes, new damage fails, worsened damage
+fails, and repairs are reported rather than punished.
+
+The corpus baseline is now empty — every article is clean — so in practice this gate reads
+as "no damaged HTML, ever". The grandfathering machinery is still tested because it is
+still what enforces that: an empty baseline means every file must be clean, and the
+refusal-to-re-grandfather tests at the bottom are what keep the baseline empty.
 """
 import json
 
@@ -84,7 +89,9 @@ def test_a_new_damaged_file_fails_even_when_others_are_baselined(site):
 def test_update_baseline_records_only_damaged_files(site, monkeypatch):
     _write(site, "clean.html", CLEAN)
     _write(site, "bad.html", DAMAGED)
-    monkeypatch.setattr("sys.argv", ["check_article_corpus.py", "--update-baseline"])
+    monkeypatch.setattr(
+        "sys.argv", ["check_article_corpus.py", "--update-baseline", "--allow-new-damage"]
+    )
 
     assert gate.main() == 0
     files = _baseline(site)["files"]
@@ -92,11 +99,53 @@ def test_update_baseline_records_only_damaged_files(site, monkeypatch):
     assert files["bad.html"]["div_delta"] == 2
 
 
-def test_update_baseline_makes_a_failing_corpus_pass(site, monkeypatch):
+def test_update_baseline_locks_in_a_repair(site, monkeypatch):
+    """The normal use: damage is fixed, and the improvement becomes the new floor."""
+    _write(site, "bad.html", DAMAGED)
+    gate.write_baseline(gate.scan())
+    _write(site, "bad.html", CLEAN)
+
+    monkeypatch.setattr("sys.argv", ["check_article_corpus.py", "--update-baseline"])
+    assert gate.main() == 0
+    assert _baseline(site)["files"] == {}
+
+    # And the repair can no longer silently regress.
+    monkeypatch.setattr("sys.argv", ["check_article_corpus.py"])
     _write(site, "bad.html", DAMAGED)
     assert gate.main() == 1
 
+
+# --- the baseline may only ever move DOWN -----------------------------------
+
+
+def test_update_baseline_refuses_to_grandfather_new_damage(site, monkeypatch):
+    """
+    The one way a green gate could quietly stop meaning anything: re-record fresh damage
+    as the new floor. It has to be refused, or the gate launders every regression that
+    follows it.
+    """
+    _write(site, "bad.html", DAMAGED)
     monkeypatch.setattr("sys.argv", ["check_article_corpus.py", "--update-baseline"])
+
+    assert gate.main() == 1
+    assert not (site / "tests" / "corpus_baseline.json").exists()
+
+
+def test_update_baseline_refuses_to_record_a_worsened_file(site, monkeypatch):
+    _write(site, "bad.html", DAMAGED)
+    gate.write_baseline(gate.scan())
+    _write(site, "bad.html", WORSE)
+
+    monkeypatch.setattr("sys.argv", ["check_article_corpus.py", "--update-baseline"])
+    assert gate.main() == 1
+    assert _baseline(site)["files"]["bad.html"]["div_delta"] == 2  # unchanged
+
+
+def test_allow_new_damage_overrides_the_refusal(site, monkeypatch):
+    _write(site, "bad.html", DAMAGED)
+    monkeypatch.setattr(
+        "sys.argv", ["check_article_corpus.py", "--update-baseline", "--allow-new-damage"]
+    )
     assert gate.main() == 0
 
     monkeypatch.setattr("sys.argv", ["check_article_corpus.py"])
