@@ -96,6 +96,7 @@ The cookie-banner repair (599 files) is the template for this class of fix:
 
 `.claude/settings.json` in this repo turns on, at session start:
 
+- `model: "fable"` — the owner's chosen default model
 - `ultracode: true` and `effortLevel: "xhigh"` — maximum reasoning effort with standing
   dynamic-workflow orchestration, so substantive tasks get fanned out and adversarially
   verified without the owner typing the keyword
@@ -109,10 +110,19 @@ owner, made after finding the prompt volume unworkable. If a future session find
 absent, it is because the session is on a branch that predates them, not because they were
 reconsidered.
 
-Caveat worth knowing: the settings schema describes `ultracode` as session-scoped and says
-interactive toggles never persist it. Setting it in a settings file *should* apply at
-startup, since settings are read then — but if a session starts without ultracode behaviour,
-that is the reason, and `effortLevel: "xhigh"` still applies independently.
+Three caveats worth knowing, all unverified at the time of writing:
+
+1. The settings schema describes `ultracode` as session-scoped and says interactive toggles
+   never persist it. Setting it in a settings file *should* apply at startup, since settings
+   are read then — but if a session starts without ultracode behaviour, that is the reason,
+   and `effortLevel: "xhigh"` still applies independently.
+2. **`"max"` is not a valid `effortLevel`.** The settings enum is `low | medium | high |
+   xhigh`, so `xhigh` is the ceiling for the main session. (`max` exists only as a per-agent
+   `effort` inside the Workflow tool, where it is used for the heaviest verification passes.)
+3. **`ultracode` requires an xhigh-capable model.** If `model: "fable"` turns out not to
+   support xhigh, ultracode will not engage and the session silently falls back. If a session
+   feels shallower than expected, test by removing the `model` line — that is the one-line
+   revert, and it is the first thing to try before assuming the other settings failed.
 
 ## Standing priorities for this project
 
