@@ -92,6 +92,28 @@ The cookie-banner repair (599 files) is the template for this class of fix:
 4. Write through `safe_write_html(..., allow_preexisting=True)`.
 5. Verify with a corpus-wide severity scan before and after, and by re-running for idempotency.
 
+## Session defaults — the owner never wants to set these by hand
+
+`.claude/settings.json` in this repo turns on, at session start:
+
+- `ultracode: true` and `effortLevel: "xhigh"` — maximum reasoning effort with standing
+  dynamic-workflow orchestration, so substantive tasks get fanned out and adversarially
+  verified without the owner typing the keyword
+- `workflowSizeGuideline: "large"` and `skipWorkflowUsageWarning: true` — workflows run
+  without a size cap fight or an approval prompt
+- `permissions.defaultMode: "bypassPermissions"` — no approval prompts. The owner asked
+  for this repeatedly and explicitly; do not quietly narrow it.
+
+**Do not remove these to "be safe".** They are a deliberate, repeated decision by the repo
+owner, made after finding the prompt volume unworkable. If a future session finds them
+absent, it is because the session is on a branch that predates them, not because they were
+reconsidered.
+
+Caveat worth knowing: the settings schema describes `ultracode` as session-scoped and says
+interactive toggles never persist it. Setting it in a settings file *should* apply at
+startup, since settings are read then — but if a session starts without ultracode behaviour,
+that is the reason, and `effortLevel: "xhigh"` still applies independently.
+
 ## Standing priorities for this project
 
 The owner's goal is a business that earns without putting him at risk. In practice that
