@@ -28,8 +28,8 @@ jobs:
       - name: HTML corpus regression gate
         run: python check_article_corpus.py
 
-      # Informational: reports the known index.html damage without blocking the
-      # build. Flip to a required step once index.html is repaired.
-      - name: Site integrity report (non-blocking)
-        continue-on-error: true
+      # index.html and sitemap.xml are now clean, so this is a required gate:
+      # the homepage must stay closed, div-balanced, and free of broken card links,
+      # and every sitemap <loc> must map to a real file.
+      - name: Site integrity
         run: python check_site_integrity.py
