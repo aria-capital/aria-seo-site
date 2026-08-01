@@ -92,6 +92,34 @@ The cookie-banner repair (599 files) is the template for this class of fix:
 4. Write through `safe_write_html(..., allow_preexisting=True)`.
 5. Verify with a corpus-wide severity scan before and after, and by re-running for idempotency.
 
+## Standing priorities for this project
+
+The owner's goal is a business that earns without putting him at risk. In practice that
+resolves to a small number of rules that should outrank tidiness, cleverness, or speed:
+
+1. **Never publish a claim the site cannot support.** Especially professional review or
+   authorship of clinical content. This is the top rule, and it has already been violated
+   twice (commit c795a01, then the 64 pages this work removed).
+2. **Publish as the entity, never as a named licensed nurse.** The owner holds an RN
+   licence. A Board of Nursing can act against a licensed nurse who publicly disseminates
+   clinical guidance — that is a livelihood risk and it is more probable than the
+   catastrophic scenarios owners tend to worry about. The site is published by ARIA Capital
+   Holdings LLC; keep it that way. Do not re-add personal bylines or credentials.
+3. **Every clinical page carries a disclaimer.** Enforced by a test. A disclaimer does not
+   make wrong content safe, so this is a floor, not a solution.
+4. **Monetization identities must match the ones the platforms authorize.** One AdSense
+   publisher (matching ads.txt), one Amazon tag. A second identity earns nothing and looks
+   like inventory laundering.
+5. **Prefer removing a false statement over adding a qualifying one.** Removing an untrue
+   claim cannot create new exposure; adding new copy is a business decision that belongs to
+   the owner.
+
+What is explicitly NOT in scope for automated work, because no amount of code review can
+settle it: whether the entity is in good standing, tax treatment, whether the clinical
+content is factually correct, and whether the site's overall model is sound. Those need a
+lawyer, an accountant, and a clinician respectively. Say so plainly rather than implying
+that a green test suite is legal safety — it is not.
+
 ## Known issues (as of the test-coverage work)
 
 Documented by tests rather than fixed, to keep changes reviewable:
