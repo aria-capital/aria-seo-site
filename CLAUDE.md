@@ -117,19 +117,29 @@ reconsidered.
 > "When you use Fable make sure it's at Max, in the newest model. But you are the default
 > selection, you always Ultracode. Saves so much time, and money when we work smart."
 
-Concretely:
+Clarified by the owner the same night: **"whichever is the highest model and thinking for
+each."** So the rule is stated by role, not by model name — model names go stale, the rule
+should not.
 
-1. **The main loop uses the default model.** Do not pin `model` in settings. The default
-   selection is the strongest available and is what the owner wants driving the session.
-2. **Ultracode is always on.** Reach for the Workflow tool on substantive work rather than
+1. **Every role runs the highest model available to it, at the highest thinking tier that
+   role supports.** Do not settle for a cheaper tier to save time or tokens; the owner's
+   position is that working smart saves both, and under-powering a hard task wastes more of
+   each than it saves.
+2. **Main loop: do not pin `model` in settings.** The default selection resolves to the
+   strongest model; pinning can only weaken it. Its thinking ceiling is
+   `effortLevel: "xhigh"` — `"max"` is not a valid settings value, so xhigh IS the maximum
+   here and is already set.
+3. **Subagents: highest model, `effort: 'max'`.** The Workflow tool's per-agent `effort`
+   does accept `max`, and that is the tier to use. At the time of writing the heavy-analysis
+   model is Fable — so `model: 'fable', effort: 'max'` — but if a stronger one exists when
+   you read this, use that instead. The instruction is "highest", not "Fable".
+4. **Ultracode is always on.** Reach for the Workflow tool on substantive work rather than
    grinding serially — that is the time-saving the owner is describing.
-3. **When spawning Fable subagents, always `model: 'fable'` with `effort: 'max'`,** and
-   always the newest Fable. Never a lower effort tier for Fable — if a task is worth handing
-   to Fable, it is worth max.
-4. **Working smart is the point, not maximum spend.** Do not fan out a workflow for a
+5. **Working smart is the point, not maximum spend.** Do not fan out a workflow for a
    one-line config change or a trivial edit; that burns the budget the orchestration is
    meant to protect. Reserve fan-out for work with real breadth — investigation across many
-   files, adversarial verification, competing designs.
+   files, adversarial verification, competing designs. Highest-tier on the *right* work, not
+   on everything.
 
 This division earned its keep in the session that established it: Fable at max produced the
 truncation-repair specification and the restructure plan, both of which caught defects the
