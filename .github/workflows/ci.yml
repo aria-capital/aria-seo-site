@@ -4,6 +4,14 @@ on:
   push:
     branches: [main]
   pull_request:
+  # The lesson this repo paid the most for: a guard nobody runs is not a guard.
+  # check_site_integrity.py correctly reported the site as broken for months and nothing
+  # read the output. Push/PR-only CI has the same hole — the corpus can rot from a direct
+  # commit, a revert, or a script run outside a PR and nothing notices until someone looks.
+  # A nightly run means the worst case is one day of silence, not one session.
+  schedule:
+    - cron: "0 8 * * *"   # 08:00 UTC daily
+  workflow_dispatch:      # so a human can force a check without pushing
 
 jobs:
   test:
