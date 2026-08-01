@@ -94,6 +94,11 @@ def test_the_real_ids_are_the_ones_ads_txt_authorizes():
     """
     Guards the whole point of the script: the publisher the pages serve must be the
     publisher ads.txt declares, or the inventory reads as unauthorized.
+
+    NOTE: the ads.txt in this repo is at a project SUBPATH and no crawler fetches it.
+    The authoritative file is at the root of the host (aria-capital.github.io/ads.txt),
+    which lives in a different repository. This test keeps the local copy consistent so it
+    stops being misleading evidence — see test_local_ads_txt_is_not_treated_as_authoritative.
     """
     import os
 
@@ -101,3 +106,33 @@ def test_the_real_ids_are_the_ones_ads_txt_authorizes():
     assert f"pub-{REAL_PUB}" in ads
     for wrong in norm.WRONG_ADSENSE_PUBS:
         assert wrong not in ads
+
+
+def test_local_ads_txt_is_not_treated_as_authoritative():
+    """
+    Regression test for a real mistake: an earlier revision read the subpath ads.txt,
+    concluded the other publisher was authoritative, and rewrote all 1,460 pages away
+    from the account the crawled root ads.txt actually authorizes.
+
+    The docstring must keep saying where the real file lives, so the next person does not
+    repeat it. Verified once by fetching both:
+        https://aria-capital.github.io/ads.txt               -> 5576001602612111
+        https://aria-capital.github.io/aria-seo-site/ads.txt -> was 6510170611627184
+    """
+    doc = norm.__doc__
+    assert "ROOT OF THE HOST" in doc.upper()
+    assert "DIFFERENT repository" in doc or "different repository" in doc
+
+
+def test_every_page_serves_exactly_one_publisher_id():
+    """A corpus split across two publisher IDs is the bug this script exists to prevent."""
+    import os
+    import re
+
+    found = set()
+    for name in sorted(os.listdir(norm.HERE)):
+        if not name.endswith(".html"):
+            continue
+        with open(os.path.join(norm.HERE, name), encoding="utf-8", errors="replace") as fh:
+            found.update(re.findall(r"ca-pub-(\d+)", fh.read()))
+    assert found in ({REAL_PUB}, set()), f"corpus serves multiple publisher IDs: {found}"

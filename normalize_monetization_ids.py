@@ -7,20 +7,39 @@ WHY THIS EXISTS
 Two monetization identities drifted into the corpus, and in both cases the wrong one won.
 
 AdSense
-    ads.txt authorizes  pub-6510170611627184
-    all 1,460 pages served ca-pub-5576001602612111
-
     ads.txt is the authorized-sellers file: it declares which publisher may sell ad
-    inventory on this domain. Ad code running under a publisher ID that ads.txt does not
+    inventory on a domain. Ad code running under a publisher the crawled ads.txt does not
     list reads as unauthorized inventory, and demand does not bid on it.
 
-    Provenance (git):
-      ca91ea4 2026-07-13  "Add AdSense ca-pub-6510170611627184 to all pages"   <- deliberate
-      08ca615 2026-07-17  "Add ads.txt for AdSense verification"  (same ID)     <- deliberate
-      b93bf9f 2026-07-21  1453-article bulk generation             (5576...)    <- introduced
-                          ...and did NOT touch ads.txt.
-    A genuine account change updates both the pages and ads.txt. A generator emitting a
-    templated ID updates only what it generates. 6510... is the real account.
+    THE CRAWLED ads.txt IS AT THE ROOT OF THE HOST, NOT AT THE PROJECT SUBPATH.
+    Verified by fetching both:
+
+      https://aria-capital.github.io/ads.txt                -> pub-5576001602612111  <-- authoritative
+      https://aria-capital.github.io/aria-seo-site/ads.txt  -> pub-6510170611627184  <-- never fetched
+
+    The root file lives in a DIFFERENT repository (the aria-capital.github.io org Pages
+    repo) which is not part of this checkout. The ads.txt in this repo is an ordinary text
+    file at a subpath; no crawler reads it, and it must not be used as evidence of which
+    account is real.
+
+    An earlier revision of this script got that backwards. It reasoned from the subpath
+    copy, concluded 6510... was authoritative, and rewrote all 1,460 pages to it — moving
+    them AWAY from the publisher the crawled ads.txt authorizes, and breaking a
+    configuration that was already consistent.
+
+    Provenance, re-read with the correct file:
+      ca91ea4 2026-07-13  "Add AdSense ca-pub-6510170611627184 to all pages"
+      08ca615 2026-07-17  subpath ads.txt added with the same ID
+      b93bf9f 2026-07-21  1453-article bulk generation switched the pages to 5576...
+    The ROOT ads.txt also says 5576..., and the deployed site serves 5576... Those two
+    agree, which is what a working configuration looks like. The most likely history is an
+    account change around 2026-07-21 that updated the pages and the root ads.txt, leaving
+    only the unread subpath copy stale.
+
+    STILL UNCONFIRMED: nobody has read the AdSense console. The owner should verify the
+    publisher ID there. If it turns out to be 6510..., flip REAL_ADSENSE_PUB and
+    WRONG_ADSENSE_PUBS and re-run — and update the ROOT ads.txt in the other repo, which
+    is the file that actually decides this.
 
 Amazon Associates
     ariacapital-20     54 links, first seen 2026-07-06, hardcoded in inject_affiliate_links.py
@@ -48,10 +67,10 @@ ADS_TXT = os.path.join(HERE, "ads.txt")
 
 # The authoritative identities. Change these ONLY with evidence, and update the
 # provenance note above when you do.
-REAL_ADSENSE_PUB = "6510170611627184"
+REAL_ADSENSE_PUB = "5576001602612111"
 REAL_AMAZON_TAG = "ariacapital-20"
 
-WRONG_ADSENSE_PUBS = ["5576001602612111"]
+WRONG_ADSENSE_PUBS = ["6510170611627184"]
 WRONG_AMAZON_TAGS = ["aria-affiliate-20"]
 
 
