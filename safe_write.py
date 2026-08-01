@@ -43,6 +43,8 @@ try:
         check_html_closed,
         check_index,
         check_sitemap,
+        html_severity,
+        severity_regressions,
         INDEX,
         SITEMAP,
     )
@@ -55,6 +57,8 @@ except ImportError:  # allow import when cwd isn't seo_site/
         check_html_closed,
         check_index,
         check_sitemap,
+        html_severity,
+        severity_regressions,
         INDEX,
         SITEMAP,
     )
@@ -62,7 +66,12 @@ except ImportError:  # allow import when cwd isn't seo_site/
 Validator = Callable[[str], list]
 
 
-def _atomic_write_validated(path: str, content: str, validator: Optional[Validator]) -> None:
+def _atomic_write_validated(
+    path: str,
+    content: str,
+    validator: Optional[Validator],
+    permit: Optional[Callable[[str], Optional[str]]] = None,
+) -> None:
     """
     Write `content` to a temp file beside `path`, validate it, then atomically
     replace `path`. If validation fails, delete the temp and raise — original kept.
@@ -87,10 +96,17 @@ def _atomic_write_validated(path: str, content: str, validator: Optional[Validat
         if validator is not None:
             problems = validator(tmp)
             if problems:
-                raise IntegrityError(
-                    f"Refusing to write {os.path.basename(path)} — "
-                    f"validation failed:\n  - " + "\n  - ".join(problems)
+                # `permit` gives a caller a second say: on an already-corrupt corpus
+                # a strict refusal would block every legitimate bulk edit. It returns
+                # None to allow the write, or a string explaining the refusal.
+                refusal = permit(content) if permit is not None else (
+                    "strict validation (no no-regression policy in effect)"
                 )
+                if refusal is not None:
+                    raise IntegrityError(
+                        f"Refusing to write {os.path.basename(path)} — {refusal}:\n  - "
+                        + "\n  - ".join(problems)
+                    )
 
         os.replace(tmp, path)  # atomic swap; no half-written window on the live file
         tmp = None  # consumed
@@ -99,16 +115,40 @@ def _atomic_write_validated(path: str, content: str, validator: Optional[Validat
             os.unlink(tmp)
 
 
-def safe_write_html(path: str, content: str) -> None:
+def safe_write_html(path: str, content: str, allow_preexisting: bool = False) -> None:
     """
     Atomically write an HTML file, refusing to persist a truncated/unbalanced doc.
     index.html gets the index-specific checks (footer count + no broken card links);
     every other .html gets the generic closed/div-balanced/one-of-each-tag checks.
+
+    allow_preexisting=True switches from "must be clean" to "must be no worse than
+    what is already on disk". Bulk mutators need this: ~two thirds of the article
+    corpus is already corrupt, so a strict gate would refuse every legitimate edit
+    to those files and the mutators would simply go back to bypassing this module.
+    The write is still refused the moment it makes any metric worse, which is the
+    property that actually matters — corruption can be repaired, never introduced.
     """
     is_index = os.path.abspath(path) == os.path.abspath(INDEX) or \
         os.path.basename(path).lower() == "index.html"
     validator: Validator = (lambda p: check_index(p)) if is_index else (lambda p: check_html_closed(p))
-    _atomic_write_validated(path, content, validator)
+
+    permit = None
+    if allow_preexisting:
+        try:
+            with open(path, encoding="utf-8", errors="replace") as fh:
+                before = html_severity(fh.read())
+        except OSError:
+            before = None  # new file: nothing to be "no worse than", so stay strict
+
+        def permit(new_content: str) -> Optional[str]:  # noqa: F811
+            if before is None:
+                return "file is new, so it must be valid"
+            worse = severity_regressions(before, html_severity(new_content))
+            if worse:
+                return "it would make an already-damaged file worse (" + "; ".join(worse) + ")"
+            return None
+
+    _atomic_write_validated(path, content, validator, permit)
 
 
 def safe_write_sitemap(path: str = SITEMAP, content: str = "") -> None:

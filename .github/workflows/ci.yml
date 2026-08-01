@@ -1,0 +1,35 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dev dependencies
+        run: pip install -r requirements-dev.txt
+
+      - name: Unit tests
+        run: python -m pytest -q
+
+      # Gates on regression, not on cleanliness: 449 articles are already damaged
+      # by writers that predate safe_write.py. Existing damage is recorded in
+      # tests/corpus_baseline.json and grandfathered; this fails only if a file
+      # gets worse, or a file with no baseline entry is anything but clean.
+      - name: HTML corpus regression gate
+        run: python check_article_corpus.py
+
+      # index.html and sitemap.xml are now clean, so this is a required gate:
+      # the homepage must stay closed, div-balanced, and free of broken card links,
+      # and every sitemap <loc> must map to a real file.
+      - name: Site integrity
+        run: python check_site_integrity.py

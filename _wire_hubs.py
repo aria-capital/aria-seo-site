@@ -3,6 +3,8 @@
 articles so the 10 hub pages stop being orphaned. Idempotent; caps per hub."""
 import os, re
 
+from safe_write import safe_write_html
+
 HERE = os.path.dirname(os.path.abspath(__file__))
 CAP = 40  # max new links added per hub this pass
 
@@ -80,7 +82,7 @@ def main():
             continue
         crumb = breadcrumb(hslug, label)
         new = t[:m.end()] + '\n' + crumb + t[m.end():]
-        open(path, 'w', encoding='utf-8').write(new)
+        safe_write_html(path, new, allow_preexisting=True)
         added[hslug] += 1
         changed += 1
     print("files changed:", changed, "| stubs skipped:", skipped_stub)

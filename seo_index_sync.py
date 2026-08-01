@@ -40,6 +40,8 @@ import sys
 import html
 from datetime import date
 
+from safe_write import safe_write_html, safe_write_sitemap, safe_write_text
+
 HERE = os.path.dirname(os.path.abspath(__file__))
 INDEX = os.path.join(HERE, "index.html")
 SITEMAP = os.path.join(HERE, "sitemap.xml")
@@ -174,8 +176,7 @@ def write_sitemap(all_articles: list[str]) -> int:
         loc = BASE_URL + u
         lines.append(f"  <url><loc>{loc}</loc><lastmod>{today}</lastmod></url>")
     lines.append("</urlset>")
-    with open(SITEMAP, "w", encoding="utf-8") as f:
-        f.write("\n".join(lines) + "\n")
+    safe_write_sitemap(SITEMAP, "\n".join(lines) + "\n")
     return len(urls)
 
 
@@ -210,11 +211,12 @@ def main() -> int:
         return 0
 
     if cards:
-        with open(INDEX + ".bak", "w", encoding="utf-8") as f:
-            f.write(index_html)
+        safe_write_text(INDEX + ".bak", index_html)
         new_html = upsert_section(index_html, build_section(cards))
-        with open(INDEX, "w", encoding="utf-8") as f:
-            f.write(new_html)
+        # index.html is itself already damaged (unbalanced divs, missing </footer>),
+        # so gate on "no worse" rather than "clean" — otherwise adding a card for a
+        # newly written article would be impossible until the page is repaired.
+        safe_write_html(INDEX, new_html, allow_preexisting=True)
         print(f"Added {len(cards)} cards to index.html (backup: index.html.bak)")
     else:
         print("No orphaned articles — index.html already complete.")

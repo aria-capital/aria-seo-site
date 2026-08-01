@@ -73,6 +73,34 @@ def check_html_closed(path: str) -> list[str]:
     return problems
 
 
+def html_severity(html: str) -> dict:
+    """
+    Structured, *comparable* corruption metrics for an HTML document.
+
+    check_html_closed() answers "is this file corrupt?" — a yes/no that is useless
+    on a corpus where two thirds of the files are already corrupt. This answers
+    "how corrupt?", so a caller can allow a write that leaves a file no worse than
+    it found it while still refusing one that makes it worse. Lower is better;
+    every value is a non-negative int/bool so metrics compare field by field.
+    """
+    return {
+        "unterminated": not html.rstrip().endswith("</html>"),
+        "div_delta": abs(len(re.findall(r"<div\b", html)) - html.count("</div>")),
+        "tag_errors": sum(abs(html.count(t) - 1) for t in ("</head>", "</body>", "</html>")),
+        "unterminated_attr": len(re.findall(r'<[a-zA-Z][^>]*?\s[a-zA-Z-]+="[^"\n]*$', html, re.M)),
+    }
+
+
+def severity_regressions(before: dict, after: dict) -> list[str]:
+    """Return a message per metric that got WORSE going from `before` to `after`."""
+    out: list[str] = []
+    for key in sorted(set(before) | set(after)):
+        b, a = int(before.get(key, 0)), int(after.get(key, 0))
+        if a > b:
+            out.append(f"{key}: {b} -> {a}")
+    return out
+
+
 def check_index(path: str = INDEX) -> list[str]:
     """index.html-specific checks, including no-broken-card-links."""
     problems = check_html_closed(path)

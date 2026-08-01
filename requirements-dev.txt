@@ -1,0 +1,3 @@
+# Test-only dependencies. The site itself has no runtime dependencies —
+# the generators use the standard library only.
+pytest>=8.0

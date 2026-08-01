@@ -26,6 +26,9 @@ import argparse
 from datetime import datetime
 from typing import List, Tuple, Optional
 
+from check_site_integrity import IntegrityError
+from safe_write import safe_write_html, safe_write_text
+
 # ---------------------------------------------------------------------------
 # Affiliate definitions
 # ---------------------------------------------------------------------------
@@ -167,11 +170,16 @@ def read_file(path: str) -> Optional[str]:
 
 
 def write_file(path: str, content: str) -> bool:
+    """
+    Write an article through the validated atomic path. A refused write leaves the
+    original file untouched and is reported by the caller as an error, which is the
+    behaviour we want: injecting a CTA must never be the thing that truncates a page.
+    """
     try:
-        with open(path, "w", encoding="utf-8") as fh:
-            fh.write(content)
+        safe_write_html(path, content, allow_preexisting=True)
         return True
-    except Exception as exc:
+    except (IntegrityError, OSError) as exc:
+        print("  WRITE REFUSED {}: {}".format(os.path.basename(path), exc))
         return False
 
 
@@ -360,8 +368,7 @@ def main():
         }
         log_path = os.path.join(scan_dir, "affiliate_inject_log.json")
         try:
-            with open(log_path, "w", encoding="utf-8") as fh:
-                json.dump(log, fh, indent=2)
+            safe_write_text(log_path, json.dumps(log, indent=2))
             print("\nLog saved to: {}".format(log_path))
         except Exception as exc:
             print("\nWARNING: could not write log: {}".format(exc))

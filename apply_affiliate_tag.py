@@ -31,6 +31,8 @@ import re
 import sys
 from pathlib import Path
 
+from safe_write import safe_write_html
+
 SITE_DIR = Path(__file__).resolve().parent
 ENV_FILE = SITE_DIR.parent / ".env.aria"
 
@@ -85,7 +87,7 @@ def main() -> int:
             new_text = AMAZON_HREF.sub(
                 lambda m: f'href="{tag_url(m.group(1), tag)}"', text)
             if new_text != text:
-                f.write_text(new_text, encoding="utf-8")
+                safe_write_html(str(f), new_text, allow_preexisting=True)
                 changed_files += 1
 
     untagged = total_links - already_tagged
