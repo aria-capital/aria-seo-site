@@ -157,6 +157,35 @@ no better source exists, but label it as inference and say what would settle it.
 live outside this repo and are not visible from a session scoped to it. Ask for what is
 missing rather than inferring the whole from the part.
 
+## The ARIA vault is readable from a cloud session — via Google Drive
+
+This took most of a session to discover, so it is written down. A session running in a
+cloud container has no path to the owner's laptop, but the **Google Drive connector reaches
+the ARIA vault directly**. Use `mcp__Google_Drive__search_files` then
+`download_file_content` (returns base64 — decode it).
+
+Start here:
+- `project_aria_company.md` — what ARIA is, the department model, the North Star goal stack
+- `ARIA Company Health Dashboard.md` — which departments actually run
+- `aria-machine-roles.md`, `aria-how-to-stop-things-safely.md` — operational runbooks
+- folder `AI Context` = `1S-2SwBgCVLZ5iUQpXghyFIJeJPMl5pa_`; `projects` = `1z2_X426wtQCJ9BqzG2h-2BGIA6VD5gn9`
+
+Facts already established from it (dated 2026-07-29, treat as possibly stale):
+- **AdSense is awaiting Google review — not approved.** No ads can serve regardless of
+  which publisher ID is on the pages. This is why there are zero ad units.
+- **ARIA revenue is $0.** Gumroad's products published 2026-07-08 with no sales; the
+  owner's own diagnosis is a traffic gap, not a product gap.
+- Only 102 of 217 registered departments have ever run, and company state is ~30 days
+  stale. `adsense_monitor`, `affiliate_tracker`, `gumroad_monitor_dept` and
+  `seo_performance_monitor` are registered but have **never run** — they would have caught
+  most of what this branch had to repair by hand.
+- The GitHub org was renamed 2026-07-22 (`Carlostrujilloglz1991` -> `aria-capital`); the
+  old username is dead for Pages, which is why stale canonicals pointed at a dead host.
+
+**Security:** `project_aria_company.md` contains live bank routing/account digits in
+plaintext. Flagged to the owner; do not echo credential values from vault files into
+commits, PR bodies, or chat.
+
 ## Known issues (as of the test-coverage work)
 
 Documented by tests rather than fixed, to keep changes reviewable:
