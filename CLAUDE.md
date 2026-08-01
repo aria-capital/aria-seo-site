@@ -228,6 +228,27 @@ determining which AdSense publisher ID was authoritative — provenance, git arc
 loader, and a loader with no slots renders nothing. The argument was about the label on an
 empty box. Ask "does this work at all?" before "which version of this is right?"
 
+**Lead with where the capability exists, not with what you cannot do.** The owner asked
+perhaps six times for Claude to drive his browser and click through AdSense. Each time he got
+an accurate explanation of why a cloud container cannot reach his Mac. All of it was true and
+none of it helped, and he had bought a Mac partly on the belief that it would work. The
+correct first answer was one line: *install Claude Code on the Mac, it drives Chrome there.*
+That took under ten minutes once actually attempted. Hours went into explaining a limitation
+instead of routing around it. When someone asks for something you cannot do, spend the effort
+finding the surface where it IS possible before spending any on the explanation.
+
+**Setup facts learned the same way, so nobody re-derives them:**
+- The install script is at `claude.ai/install.sh`, not `claude.com/install.sh` — the latter 404s.
+- Installing the Chrome extension is not enough. It must be SIGNED IN to the same account, or
+  `list_connected_browsers` returns empty and every browser call fails with "not connected".
+- Settings are read at startup only. Writing `~/.claude/settings.json` mid-session changes
+  nothing until Claude Code is restarted — verify with `/effort current` afterwards.
+- `CLAUDE.md` is only loaded when Claude starts INSIDE the folder containing it. A session
+  launched from the home directory knows none of this file. Clone the repo locally and launch
+  from within it, or the local session is blind while the cloud one is not.
+- The desktop app is the right recommendation for a non-technical owner: same capability as the
+  terminal CLI, but a real window. "It looks like a command tab" is a fair complaint.
+
 **ads.txt is fetched from the ROOT of the host, never a project subpath.**
 `aria-capital.github.io/ads.txt` is authoritative and lives in the *aria-capital.github.io*
 repo, which is a separate repository. The `ads.txt` in THIS repo sits at
