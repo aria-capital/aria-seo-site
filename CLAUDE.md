@@ -354,6 +354,20 @@ is structural, not sloppy — a snapshot read as current truth. `repo_state.py` 
 run it before planning anything. And when you close an item, fix the note in the same
 commit, because the next session cannot tell a stale bullet from a live one.
 
+**The measured half-life of a number in this file is about three hours.** Not a figure of
+speech. PR #6 merged at 09:58 carrying the bullet *"the sitemap question is unresolved…
+picking the 934 is the owner's call"*. PR #8 merged at 13:19 and curated the sitemap to
+940. The note was true when written, true when reviewed, true when merged, and false
+**3h21m later** — and it then sat there misinforming the next two sessions. Nobody was
+careless; several sessions land work in this repo on the same day, and prose cannot track
+that.
+
+So write Known-issues bullets to survive it: **state the hazard in prose and let
+`repo_state.py` supply the count.** "Four scripts can write the sitemap and three would
+revert the curation" stays true until someone fixes it; "the sitemap has 1,461 URLs" is
+false the moment anyone touches it. A sentence with a number in it has an expiry date, so
+either point at the reporter or accept that you are writing something with a deadline.
+
 **Prove a repair script reproduces the tree, don't just prove it ran.** After the
 141-file block repair, the check that actually settled it was: `git archive HEAD` into a
 scratch dir, copy the scripts in, run them in order, `diff -rq` against the working tree.
