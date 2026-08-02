@@ -136,7 +136,8 @@ def main() -> int:
         print("\n[dry-run] sitemap.xml not written.")
         return 0
 
-    safe_write_sitemap(OUT, xml)
+    # The only caller allowed to pass this. See safe_write.safe_write_sitemap.
+    safe_write_sitemap(OUT, xml, curated=True)
     print(f"\n  wrote {OUT} — {len(names) + len(CORE_PAGES)} URLs")
     print("  Every article remains live; this only changes what is advertised to crawlers.")
     return 0

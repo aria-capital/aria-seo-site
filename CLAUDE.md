@@ -465,24 +465,24 @@ Do not re-litigate these; they were measured, not assumed. Each is now held by a
 - **`?via=aria` placeholders**: none left.
 - **Canonicals and disclaimers**: every article has `rel="canonical"`; every clinical page
   carries disclaimer language.
+- **Only `build_curated_sitemap.py` can write the sitemap.** Four scripts called
+  `safe_write_sitemap()` and three of them would have replaced the curated file with a
+  full-corpus dump, silently, with every existing check still green. The write path now
+  requires a keyword-only `curated=True` that only the curator passes, so the other three
+  fail loudly at the moment of damage; `check_sitemap_curated.py` is the CI backstop for
+  writes that never reach `safe_write` at all. It asserts that no article below the
+  curator's quality floor is advertised — an invariant that survives content growth and
+  batch widening, where a byte- or set-comparison would go red on both.
 - **`generate_sitemap.read_base_url()`** no longer falls back to a dead host — it refuses.
 - **`seo_index_sync.linked_in_index()`** now matches any local href, so `privacy_policy.html`
   stops reading as an orphan on every run.
 
 ## Known issues
 
-- **Four scripts can write `sitemap.xml`, and three of them would destroy the curation.**
-  The sitemap question is *settled*: `build_curated_sitemap.py` produced the deliberate
-  940-URL file now on disk, which is what keeps the site from advertising itself as a
-  content farm. But `generate_sitemap.py` (1,461 URLs), `seo_index_sync.py` (1,458) and
-  `build_seo_index.py` all still call `safe_write_sitemap()`, and last one to run wins.
-  Running any of them silently reverts a decision made specifically to avoid a manual
-  action. `repo_state.py` reports the writer count for exactly this reason. **Only
-  `build_curated_sitemap.py` may write the sitemap.** A guard enforcing that is the obvious
-  next repair, and has not been written.
-- **`seo_index_sync.py` would add 852 orphan cards** to `index.html` on its next run —
-  and, per the point above, would take the sitemap down with it. Whether those articles
-  should be linked from the homepage at all is a curation decision for the owner.
+- **`seo_index_sync.py` would add 852 orphan cards** to `index.html` on its next run.
+  Whether those articles should be linked from the homepage at all is a curation decision
+  for the owner. (Its sitemap write is now blocked — see below — but its index write is
+  not, and that is the part still needing a decision.)
 - **`generate_sitemap.build()` writes `sitemap.xml` and `robots.txt` as a side effect**, and
   its `<lastmod>` comes from file mtime — so merely *calling* it to inspect the output
   rewrites the live sitemap with today's dates on every article you happen to have touched.

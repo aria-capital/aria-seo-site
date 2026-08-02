@@ -41,3 +41,11 @@ jobs:
       # and every sitemap <loc> must map to a real file.
       - name: Site integrity
         run: python check_site_integrity.py
+
+      # Backstop for the curated sitemap. safe_write_sitemap() refuses the three legacy
+      # writers at the moment of damage, which is the primary guard; this catches what it
+      # cannot see — a hand-edit, a revert of the curation commit, or a future script that
+      # bypasses safe_write. It asserts that no article below the curator's quality floor
+      # is advertised, which is stable across content growth and batch widening.
+      - name: Sitemap is still a curation
+        run: python check_sitemap_curated.py

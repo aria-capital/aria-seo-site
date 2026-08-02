@@ -2,9 +2,14 @@
 Tests for generate_sitemap.py.
 
 The base URL is assembled from _config.yml and stamped onto every URL in the
-sitemap, so a parsing slip mislabels the entire site to crawlers. There is also a
-hardcoded fallback host that no longer matches the deployed one — pinned here so
-the discrepancy is visible rather than silent.
+sitemap, so a parsing slip mislabels the entire site to crawlers. read_base_url now
+REFUSES rather than falling back to a guessed host, and that refusal is pinned below.
+
+generate_sitemap is also one of the three legacy sitemap writers that
+safe_write_sitemap() now turns away — see tests/test_sitemap_guard.py. Its selection and
+priority logic is still worth testing, so the build() tests opt through the guard
+explicitly via the allow_sitemap_write fixture. Nothing here should ever add curated=True
+to generate_sitemap itself.
 """
 import pytest
 
@@ -18,6 +23,24 @@ def site(tmp_path, monkeypatch):
     monkeypatch.setattr(gs, "HERE", tmp_path)
     monkeypatch.setattr(csi, "SITE_DIR", str(tmp_path))
     return tmp_path
+
+
+@pytest.fixture
+def allow_sitemap_write(monkeypatch):
+    """
+    Let build() complete so its OUTPUT can be asserted on.
+
+    safe_write_sitemap refuses generate_sitemap by design — that refusal is the guard, and
+    test_sitemap_guard.py pins it. These tests are about which URLs and priorities build()
+    chooses, which is a separate question, so they let the write through here rather than
+    weakening the guard in the source.
+    """
+    import safe_write
+
+    real = safe_write.safe_write_sitemap
+    monkeypatch.setattr(
+        gs, "safe_write_sitemap", lambda path, content="", **kw: real(path, content, curated=True)
+    )
 
 
 def _config(site, text):
@@ -76,7 +99,7 @@ def test_config_without_a_url_key_also_refuses(site):
 # --- build() ----------------------------------------------------------------
 
 
-def test_build_lists_articles_and_writes_robots(site):
+def test_build_lists_articles_and_writes_robots(site, allow_sitemap_write):
     _config(site, "url: https://example.test\nbaseurl: /s\n")
     for name in ("index.html", "guide.html"):
         (site / name).write_text(
@@ -95,7 +118,7 @@ def test_build_lists_articles_and_writes_robots(site):
         "Sitemap: https://example.test/s/sitemap.xml\n")
 
 
-def test_build_excludes_error_and_verification_pages(site):
+def test_build_excludes_error_and_verification_pages(site, allow_sitemap_write):
     _config(site, "url: https://example.test\n")
     for name in ("404.html", "google-verify.html", "real.html"):
         (site / name).write_text(
@@ -109,7 +132,7 @@ def test_build_excludes_error_and_verification_pages(site):
     assert "404.html" not in sitemap and "google-verify.html" not in sitemap
 
 
-def test_build_gives_static_pages_low_priority(site):
+def test_build_gives_static_pages_low_priority(site, allow_sitemap_write):
     _config(site, "url: https://example.test\n")
     for name in ("privacy.html", "guide.html"):
         (site / name).write_text(
@@ -123,3 +146,20 @@ def test_build_gives_static_pages_low_priority(site):
 
     assert "<priority>0.3</priority>" in privacy
     assert "<priority>0.8</priority>" in guide
+
+
+def test_build_is_refused_without_the_fixture(site):
+    """
+    The guard, seen from this module: without an explicit opt-in, generate_sitemap cannot
+    replace the curated sitemap — not even by accident, and not even when a session calls
+    build() merely to inspect what it would produce. That exact mistake rewrote the live
+    sitemap once.
+    """
+    from check_site_integrity import IntegrityError
+
+    _config(site, "url: https://example.test\n")
+    (site / "real.html").write_text(
+        "<html><head></head><body><div>x</div></body></html>", encoding="utf-8"
+    )
+    with pytest.raises(IntegrityError, match="Refusing to write"):
+        gs.build()
