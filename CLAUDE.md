@@ -368,6 +368,22 @@ revert the curation" stays true until someone fixes it; "the sitemap has 1,461 U
 false the moment anyone touches it. A sentence with a number in it has an expiry date, so
 either point at the reporter or accept that you are writing something with a deadline.
 
+**A source-inspection assertion must test the import, not the mention.** Three times in one
+session a test of the form `assert "safe_write" not in src` failed on a module that was
+*explaining* the symbol in a docstring or a removal comment. Documentation naming a thing
+looks identical to code calling it if you grep for the name. Assert on
+`^\s*from x import y` and on the call shape, never on bare presence — and expect the
+best-documented module to be the one that trips the naive version.
+
+**Adding a guard can create a half-write. Check the order of operations in every caller.**
+`safe_write_sitemap()` was taught to refuse the legacy writers, which was correct — but
+`seo_index_sync.main()` wrote `index.html` first and the sitemap second, so a real run
+would have rewritten the homepage with 852 cards and then died on the refusal. A guard that
+turns a completed bad run into a half-completed one has made things worse. The fix was to
+delete the sitemap write from that script entirely rather than reorder it: linking an
+article from the homepage and advertising it to crawlers are separate decisions, and it
+only owns the first.
+
 **Prove a repair script reproduces the tree, don't just prove it ran.** After the
 141-file block repair, the check that actually settled it was: `git archive HEAD` into a
 scratch dir, copy the scripts in, run them in order, `diff -rq` against the working tree.

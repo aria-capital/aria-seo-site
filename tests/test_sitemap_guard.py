@@ -181,3 +181,38 @@ def test_gate_runs_as_a_script():
                        capture_output=True, text=True)
     assert r.returncode == 0, r.stdout + r.stderr
     assert "PASS" in r.stdout
+
+
+# --- the half-write the guard would otherwise have caused ---------------------
+
+
+def test_seo_index_sync_no_longer_writes_the_sitemap():
+    """
+    A regression the guard itself created and this fixes.
+
+    seo_index_sync.main() wrote index.html FIRST and the sitemap second. Once
+    safe_write_sitemap started refusing it, a real run rewrote index.html with 852 cards
+    and then died — a half-completed run, which is worse than either outcome. The write is
+    removed rather than reordered: linking an article from the homepage and advertising it
+    to crawlers are separate decisions, and this script only owns the first.
+    """
+    src = open(os.path.join(HERE, "seo_index_sync.py"), encoding="utf-8").read()
+
+    # Assert on the IMPORT, not on the string. The file explains the removal in a comment
+    # that names safe_write_sitemap(), and "is the symbol mentioned anywhere" is the wrong
+    # question — a module cannot call what it never imported.
+    assert not re.search(r"^\s*from safe_write import[^\n]*safe_write_sitemap", src, re.M)
+    assert not re.search(r"^\s*import safe_write\s*$", src, re.M)
+    import repo_state
+
+    assert "seo_index_sync.py" not in repo_state.sitemap_writers(), \
+        "repo_state must stop listing it as a sitemap writer"
+
+
+def test_seo_index_sync_still_does_its_actual_job():
+    """Removing the sitemap write must not break card discovery."""
+    import seo_index_sync as sync
+
+    index = open(os.path.join(HERE, "index.html"), encoding="utf-8").read()
+    assert sync.linked_in_index(index), "still finds the articles index.html links to"
+    assert sync.article_files(), "still enumerates candidate articles"
