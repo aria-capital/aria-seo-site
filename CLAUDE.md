@@ -3,6 +3,36 @@
 Read this before changing anything. It records what broke here, why, and the rules that
 keep it from breaking again. Most of it was learned the expensive way.
 
+## Start here
+
+**Run `python repo_state.py` first. Believe it over this file.**
+
+This document has been substantially wrong at the start of three consecutive sessions —
+not through carelessness, but because it is written as a snapshot and read as current
+truth, and every fix widens the gap. One session opened with a Known-issues list where
+most items were already closed and burned an hour re-deriving that by hand. The next
+session closed the sitemap item, which made the list stale again the same day.
+`repo_state.py` prints the underlying numbers in two seconds; it exists so nobody pays
+that hour again.
+
+**The engineering backlog is essentially closed.** The corpus is clean (1,461 articles,
+zero damaged, empty baseline), both gates are strict and run on push, PR and nightly, and
+298 tests cover it. There is no pile of broken things left to find.
+
+**What remains is not engineering, and this is the part worth internalising:**
+
+- **No revenue channel works, and no code change makes one work.** AdSense is not approved
+  and there are zero `<ins>` ad units on the site; Amazon Associates enrolment is
+  unconfirmed; zero affiliate programs are approved; Google has indexed nothing. Every one
+  of those is an account action only the owner can take.
+- The remaining site-shape questions — the 852 homepage orphan cards, the three brand
+  identities — are curation decisions, not defects.
+
+So: **do not go looking for code to write.** If a session opens with no specific ask, the
+useful move is to say plainly what is blocked on the owner and stop, not to manufacture a
+refactor. A green test suite is not progress toward revenue, and this repo has already
+spent more sessions polishing the machine than the machine has ever earned.
+
 ## What this repo is
 
 A static SEO/affiliate site deployed via GitHub Pages: ~1,461 hand-generated HTML articles
@@ -317,6 +347,21 @@ the closing tag for 2,347 of 2,355 blocks, and the 8 misses became the refusal c
 rather than a bug found later. A rule with a measured error rate can be given a matching
 guard; a rule that merely looks correct cannot.
 
+**These notes go stale faster than anyone expects — measure before you trust them.** Three
+sessions running, the Known-issues section was substantially wrong on arrival, and each
+time the wrongness pointed the same way: work listed as open was already done. The failure
+is structural, not sloppy — a snapshot read as current truth. `repo_state.py` is the fix;
+run it before planning anything. And when you close an item, fix the note in the same
+commit, because the next session cannot tell a stale bullet from a live one.
+
+**Prove a repair script reproduces the tree, don't just prove it ran.** After the
+141-file block repair, the check that actually settled it was: `git archive HEAD` into a
+scratch dir, copy the scripts in, run them in order, `diff -rq` against the working tree.
+Zero differing files means the committed scripts genuinely produce the committed result —
+so a reviewer can re-derive 148 changed files instead of reading them, and a later session
+can re-run the repair without wondering whether the tree drifted from the code. Cheap, and
+much stronger than "it exited 0".
+
 **Confident inference is still inference.** The AdSense ID was chosen by git provenance and
 was wrong. The Amazon tag `ariacapital-20` was chosen the same way and is still UNVERIFIED —
 nobody has read the Associates console. Reasoning from repo evidence is the right method when
@@ -412,14 +457,18 @@ Do not re-litigate these; they were measured, not assumed. Each is now held by a
 
 ## Known issues
 
-- **Two scripts both write `sitemap.xml`** and disagree. `generate_sitemap.py` produces 1,461
-  URLs, `seo_index_sync.py --dry-run` says 1,458 and a different schema; the file on disk
-  matches neither exactly. Last one to run wins. **Unresolved, and do not resolve it by
-  running one of them** — see the sitemap warning in the vault section: the plan of record
-  wants a curated ~934-URL sitemap, not every URL, and a mass submission is manual-action
-  bait. Picking the 934 is the owner's call.
-- **`seo_index_sync.py` would add 852 orphan cards** to `index.html` on its next run. Whether
-  those articles should be linked from the homepage at all is the same curation decision.
+- **Four scripts can write `sitemap.xml`, and three of them would destroy the curation.**
+  The sitemap question is *settled*: `build_curated_sitemap.py` produced the deliberate
+  940-URL file now on disk, which is what keeps the site from advertising itself as a
+  content farm. But `generate_sitemap.py` (1,461 URLs), `seo_index_sync.py` (1,458) and
+  `build_seo_index.py` all still call `safe_write_sitemap()`, and last one to run wins.
+  Running any of them silently reverts a decision made specifically to avoid a manual
+  action. `repo_state.py` reports the writer count for exactly this reason. **Only
+  `build_curated_sitemap.py` may write the sitemap.** A guard enforcing that is the obvious
+  next repair, and has not been written.
+- **`seo_index_sync.py` would add 852 orphan cards** to `index.html` on its next run —
+  and, per the point above, would take the sitemap down with it. Whether those articles
+  should be linked from the homepage at all is a curation decision for the owner.
 - **`generate_sitemap.build()` writes `sitemap.xml` and `robots.txt` as a side effect**, and
   its `<lastmod>` comes from file mtime — so merely *calling* it to inspect the output
   rewrites the live sitemap with today's dates on every article you happen to have touched.
@@ -436,12 +485,20 @@ Do not re-litigate these; they were measured, not assumed. Each is now held by a
 - **1,255 `.fuse_hidden*` files are committed** — orphans from unclean FUSE unmounts, not
   byte-identical to any live article. Junk, but tracked, so removal is the owner's call.
 - **Three brand identities**: `_config.yml` says "Money Psychology", footers say "ICU
-  Notebook", the org is "aria-capital".
+  Notebook" (1,460 articles), the org is "aria-capital". "ARIA Capital Holdings LLC"
+  appears in 61 pages — that one is *correct* and must not be tidied away; it is the
+  publishing entity required by standing priority 2.
+- **The published contact address is inconsistent, and one form is a personal first name.**
+  `legal@ariacapitalholdings.com` on 47 pages, `info@` on 1, and
+  `carlos@ariacapitalholdings.com` on 27 (26 of which also carry the street address).
+  Raised with the owner; not changed, because redirecting a live business contact path is
+  his call and mail to a role alias that does not exist would simply vanish.
 
 ## Commands
 
 ```bash
-python -m pytest -q                              # 276 tests
+python repo_state.py                             # RUN FIRST — measured state; trust over these notes
+python -m pytest -q                              # 298 tests
 python check_article_corpus.py                   # CI gate: zero damaged HTML, no exceptions
 python check_article_corpus.py --update-baseline # after repairing files; refuses new damage
 python check_site_integrity.py                   # index.html + sitemap.xml; required in CI
