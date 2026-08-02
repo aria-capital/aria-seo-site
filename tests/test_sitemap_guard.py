@@ -107,10 +107,18 @@ def test_generate_sitemap_build_now_raises_instead_of_reverting():
 
 
 def test_the_live_sitemap_is_untouched_by_that_call():
-    """Belt and braces on the test above: the refusal must not be a partial write."""
+    """
+    Belt and braces on the test above: the refusal must not be a partial write.
+
+    The bound is the corpus size, NOT a hardcoded 1,200. An earlier version of this test
+    asserted `< 1200`, which would have gone red on `--target 1200` — the curator's own
+    documented widening command, and a sanctioned owner decision. A test that fails on the
+    legitimate operation is how gates get ignored.
+    """
     with open(os.path.join(HERE, "sitemap.xml"), encoding="utf-8") as fh:
         xml = fh.read()
-    assert xml.count("<loc>") < 1200, "a full-corpus dump would be ~1,461"
+    articles = len([n for n in os.listdir(HERE) if n.endswith(".html")])
+    assert xml.count("<loc>") < articles, "a full-corpus dump would advertise everything"
 
 
 # --- layer 2: the CI backstop ------------------------------------------------
@@ -216,3 +224,43 @@ def test_seo_index_sync_still_does_its_actual_job():
     index = open(os.path.join(HERE, "index.html"), encoding="utf-8").read()
     assert sync.linked_in_index(index), "still finds the articles index.html links to"
     assert sync.article_files(), "still enumerates candidate articles"
+
+
+# --- the advertised set is not one file --------------------------------------
+
+
+def test_gate_catches_a_sidecar_sitemap(monkeypatch, tmp_path):
+    """
+    Verified bypass: write sitemap-all.xml directly (never touches safe_write, so the
+    curated= refusal cannot fire) and add one Sitemap: line to robots.txt. Crawlers follow
+    both directives and ingest the whole corpus, while every file-scoped check stays green.
+    """
+    monkeypatch.setattr(G, "HERE", str(tmp_path))
+    monkeypatch.setattr(G, "SITEMAP", str(tmp_path / "sitemap.xml"))
+    monkeypatch.setattr(G, "ROBOTS", str(tmp_path / "robots.txt"))
+    (tmp_path / "sitemap.xml").write_text(SITEMAP_TMPL.format(rows=""), encoding="utf-8")
+    (tmp_path / "sitemap-all.xml").write_text(SITEMAP_TMPL.format(rows=""), encoding="utf-8")
+
+    assert any("sitemap-all.xml" in p for p in G.problems())
+
+
+def test_gate_catches_a_second_robots_directive(monkeypatch, tmp_path):
+    monkeypatch.setattr(G, "HERE", str(tmp_path))
+    monkeypatch.setattr(G, "SITEMAP", str(tmp_path / "sitemap.xml"))
+    monkeypatch.setattr(G, "ROBOTS", str(tmp_path / "robots.txt"))
+    (tmp_path / "sitemap.xml").write_text(SITEMAP_TMPL.format(rows=""), encoding="utf-8")
+    (tmp_path / "robots.txt").write_text(
+        "User-agent: *\nAllow: /\n\n"
+        "Sitemap: https://x.test/aria-seo-site/sitemap.xml\n"
+        "Sitemap: https://x.test/aria-seo-site/sitemap-all.xml\n",
+        encoding="utf-8",
+    )
+    found = G.problems()
+    assert any("sitemap-all.xml" in p for p in found)
+    assert not any(p.endswith("/sitemap.xml', which is not the curated sitemap.xml")
+                   for p in found), "the canonical directive must not be flagged"
+
+
+def test_the_live_robots_points_only_at_the_curated_sitemap():
+    assert all(d.rstrip("/").endswith("/sitemap.xml") for d in G.declared_sitemaps())
+    assert G.sidecar_sitemaps() == []
