@@ -15,7 +15,9 @@ This script closes the gap idempotently:
   3. Extracts each missing article's <title> + meta description.
   4. Appends card <a> blocks into a dedicated "More Guides" section that lives
      just before the newsletter block, matching the existing card markup.
-  5. Rebuilds sitemap.xml to list every article + core pages.
+  5. Leaves sitemap.xml alone. It used to rebuild it with every article; that
+     overwrote a deliberate 940-URL curation and is gone. See the note where
+     write_sitemap() used to be.
 
 SAFETY
 ------
@@ -38,9 +40,7 @@ import os
 import re
 import sys
 import html
-from datetime import date
-
-from safe_write import safe_write_html, safe_write_sitemap, safe_write_text
+from safe_write import safe_write_html, safe_write_text
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 INDEX = os.path.join(HERE, "index.html")
@@ -176,17 +176,17 @@ def upsert_section(index_html: str, section: str) -> str:
     return index_html + "\n" + section + "\n"
 
 
-def write_sitemap(all_articles: list[str]) -> int:
-    urls = ["", "about.html", "affiliate-disclosure.html"] + all_articles
-    today = date.today().isoformat()
-    lines = ['<?xml version="1.0" encoding="UTF-8"?>',
-             '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">']
-    for u in urls:
-        loc = BASE_URL + u
-        lines.append(f"  <url><loc>{loc}</loc><lastmod>{today}</lastmod></url>")
-    lines.append("</urlset>")
-    safe_write_sitemap(SITEMAP, "\n".join(lines) + "\n")
-    return len(urls)
+# write_sitemap() used to live here and is deliberately gone. It emitted every article
+# (1,458 URLs, in a schema nothing else used) straight over the curated sitemap, which is
+# a 940-URL selection chosen specifically so the site does not advertise itself as a
+# content farm. Linking an article from the homepage and advertising it to crawlers are
+# separate decisions, and this script only owns the first one.
+#
+# safe_write_sitemap() would now refuse the write anyway — but it refused it AFTER
+# index.html had already been rewritten, which turned a full run into a half-completed
+# one. Removing the call is what actually fixes that; the guard is the backstop.
+#
+# To rebuild the sitemap:  python3 build_curated_sitemap.py [--target N]
 
 
 def main() -> int:
@@ -215,8 +215,9 @@ def main() -> int:
     if dry:
         for name in missing:
             print("  + " + name)
-        print(f"[dry-run] would add {len(cards)} cards and rewrite sitemap "
-              f"({len(articles) + 3} urls). No files written.")
+        print(f"[dry-run] would add {len(cards)} cards to index.html. "
+              f"sitemap.xml is NOT touched — it is a curation owned by "
+              f"build_curated_sitemap.py. No files written.")
         return 0
 
     if cards:
@@ -230,8 +231,8 @@ def main() -> int:
     else:
         print("No orphaned articles — index.html already complete.")
 
-    n = write_sitemap(articles)
-    print(f"Rebuilt sitemap.xml with {n} URLs.")
+    print("sitemap.xml left alone — it is a curated selection, not a list of every "
+          "article. Run build_curated_sitemap.py if the corpus changed.")
     return 0
 
 

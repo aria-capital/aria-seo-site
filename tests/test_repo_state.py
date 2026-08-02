@@ -47,6 +47,19 @@ def test_source_cannot_write():
 # --- the numbers must match reality -----------------------------------------
 
 
+def _can_write_sitemap(src: str) -> bool:
+    """Imports the writer AND calls it — merely naming it in prose does not count."""
+    return bool(
+        re.search(r"^\s*from safe_write import[^\n]*safe_write_sitemap", src, re.M)
+        and re.search(r"safe_write_sitemap\s*\(", src)
+    )
+
+
+def test_a_module_that_only_mentions_the_writer_is_not_counted():
+    """check_sitemap_curated.py discusses safe_write_sitemap in its docstring."""
+    assert "check_sitemap_curated.py" not in R.sitemap_writers()
+
+
 def test_sitemap_writers_finds_every_script_that_can_rewrite_the_sitemap():
     """
     The curated 940-URL sitemap is a deliberate decision three legacy scripts would
@@ -57,7 +70,7 @@ def test_sitemap_writers_finds_every_script_that_can_rewrite_the_sitemap():
         for name in os.listdir(HERE)
         if name.endswith(".py")
         and name not in ("safe_write.py", "repo_state.py")
-        and "safe_write_sitemap(" in open(os.path.join(HERE, name), encoding="utf-8").read()
+        and _can_write_sitemap(open(os.path.join(HERE, name), encoding="utf-8").read())
     }
     assert set(R.sitemap_writers()) == expected
     assert "build_curated_sitemap.py" in expected

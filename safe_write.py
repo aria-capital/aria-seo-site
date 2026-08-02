@@ -151,8 +151,40 @@ def safe_write_html(path: str, content: str, allow_preexisting: bool = False) ->
     _atomic_write_validated(path, content, validator, permit)
 
 
-def safe_write_sitemap(path: str = SITEMAP, content: str = "") -> None:
-    """Atomically write sitemap.xml, refusing invalid XML or dangling <loc> files."""
+CURATOR = "build_curated_sitemap.py"
+
+_UNCURATED = (
+    "Refusing to write {path}.\n\n"
+    "The live sitemap is a deliberate curation, not a dump of the corpus. The site matches "
+    "three of Google's four scaled-content-abuse triggers, so advertising every article at "
+    "once is manual-action bait; the plan of record calls for a curated batch instead.\n\n"
+    f"Only {CURATOR} may write it, and it is the only caller that passes curated=True.\n"
+    "  rebuild the recorded batch : python3 " + CURATOR + "\n"
+    "  see the writers            : python3 repo_state.py\n\n"
+    "Do NOT reach for --target to make this go away. Growing the batch is an owner "
+    "decision under scaled-content-abuse risk, not a step in regenerating the sitemap: "
+    "--target 1421 would advertise essentially the whole corpus and pass every gate, "
+    "which is the outcome this guard exists to prevent.\n\n"
+    "If you reached this from generate_sitemap.py, seo_index_sync.py or build_seo_index.py, "
+    "that is the guard working: each of those would have replaced the curated sitemap with "
+    "a full-corpus one, and no other check would have noticed."
+)
+
+
+def safe_write_sitemap(path: str = SITEMAP, content: str = "", *, curated: bool = False) -> None:
+    """
+    Atomically write sitemap.xml, refusing invalid XML or dangling <loc> files.
+
+    `curated` is a required opt-in, keyword-only so it cannot be passed by accident.
+    Four scripts in this repo call this function and only one of them should: the sitemap
+    on disk is a curated subset, and the other three would silently replace it with every
+    URL in the corpus. Detecting that after the fact was not enough — the repo's own
+    lesson is that a safety module which isn't on the call path is not a safety module —
+    so the refusal lives here, at the moment of damage, rather than in a checker that runs
+    later and reports what already happened.
+    """
+    if not curated:
+        raise IntegrityError(_UNCURATED.format(path=os.path.basename(path)))
     _atomic_write_validated(path, content, lambda p: check_sitemap(p))
 
 

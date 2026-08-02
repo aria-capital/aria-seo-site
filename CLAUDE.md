@@ -368,6 +368,22 @@ revert the curation" stays true until someone fixes it; "the sitemap has 1,461 U
 false the moment anyone touches it. A sentence with a number in it has an expiry date, so
 either point at the reporter or accept that you are writing something with a deadline.
 
+**A source-inspection assertion must test the import, not the mention.** Three times in one
+session a test of the form `assert "safe_write" not in src` failed on a module that was
+*explaining* the symbol in a docstring or a removal comment. Documentation naming a thing
+looks identical to code calling it if you grep for the name. Assert on
+`^\s*from x import y` and on the call shape, never on bare presence — and expect the
+best-documented module to be the one that trips the naive version.
+
+**Adding a guard can create a half-write. Check the order of operations in every caller.**
+`safe_write_sitemap()` was taught to refuse the legacy writers, which was correct — but
+`seo_index_sync.main()` wrote `index.html` first and the sitemap second, so a real run
+would have rewritten the homepage with 852 cards and then died on the refusal. A guard that
+turns a completed bad run into a half-completed one has made things worse. The fix was to
+delete the sitemap write from that script entirely rather than reorder it: linking an
+article from the homepage and advertising it to crawlers are separate decisions, and it
+only owns the first.
+
 **Prove a repair script reproduces the tree, don't just prove it ran.** After the
 141-file block repair, the check that actually settled it was: `git archive HEAD` into a
 scratch dir, copy the scripts in, run them in order, `diff -rq` against the working tree.
@@ -465,24 +481,24 @@ Do not re-litigate these; they were measured, not assumed. Each is now held by a
 - **`?via=aria` placeholders**: none left.
 - **Canonicals and disclaimers**: every article has `rel="canonical"`; every clinical page
   carries disclaimer language.
+- **Only `build_curated_sitemap.py` can write the sitemap.** Four scripts called
+  `safe_write_sitemap()` and three of them would have replaced the curated file with a
+  full-corpus dump, silently, with every existing check still green. The write path now
+  requires a keyword-only `curated=True` that only the curator passes, so the other three
+  fail loudly at the moment of damage; `check_sitemap_curated.py` is the CI backstop for
+  writes that never reach `safe_write` at all. It asserts that no article below the
+  curator's quality floor is advertised — an invariant that survives content growth and
+  batch widening, where a byte- or set-comparison would go red on both.
 - **`generate_sitemap.read_base_url()`** no longer falls back to a dead host — it refuses.
 - **`seo_index_sync.linked_in_index()`** now matches any local href, so `privacy_policy.html`
   stops reading as an orphan on every run.
 
 ## Known issues
 
-- **Four scripts can write `sitemap.xml`, and three of them would destroy the curation.**
-  The sitemap question is *settled*: `build_curated_sitemap.py` produced the deliberate
-  940-URL file now on disk, which is what keeps the site from advertising itself as a
-  content farm. But `generate_sitemap.py` (1,461 URLs), `seo_index_sync.py` (1,458) and
-  `build_seo_index.py` all still call `safe_write_sitemap()`, and last one to run wins.
-  Running any of them silently reverts a decision made specifically to avoid a manual
-  action. `repo_state.py` reports the writer count for exactly this reason. **Only
-  `build_curated_sitemap.py` may write the sitemap.** A guard enforcing that is the obvious
-  next repair, and has not been written.
-- **`seo_index_sync.py` would add 852 orphan cards** to `index.html` on its next run —
-  and, per the point above, would take the sitemap down with it. Whether those articles
-  should be linked from the homepage at all is a curation decision for the owner.
+- **`seo_index_sync.py` would add 852 orphan cards** to `index.html` on its next run.
+  Whether those articles should be linked from the homepage at all is a curation decision
+  for the owner. (Its sitemap write is now blocked — see below — but its index write is
+  not, and that is the part still needing a decision.)
 - **`generate_sitemap.build()` writes `sitemap.xml` and `robots.txt` as a side effect**, and
   its `<lastmod>` comes from file mtime — so merely *calling* it to inspect the output
   rewrites the live sitemap with today's dates on every article you happen to have touched.

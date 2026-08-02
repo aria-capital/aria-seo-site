@@ -33,6 +33,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 
 # Scripts that call safe_write_sitemap() are all capable of rewriting sitemap.xml.
 SITEMAP_WRITER = re.compile(r"safe_write_sitemap\s*\(")
+SITEMAP_IMPORT = re.compile(r"^\s*from safe_write import[^\n]*safe_write_sitemap", re.M)
 
 
 def _read(name: str) -> str:
@@ -59,12 +60,20 @@ def _tracked_fuse_hidden() -> int:
 
 
 def sitemap_writers() -> list[str]:
-    """Every script that can rewrite sitemap.xml. More than one is a standing hazard."""
+    """
+    Every script that can actually rewrite sitemap.xml.
+
+    Requires an *import* of safe_write_sitemap as well as a call, because several modules
+    now discuss the function in prose without being able to invoke it —
+    check_sitemap_curated.py explains the guard in its docstring and was reported as a
+    writer until this was tightened.
+    """
     out = []
     for name in sorted(os.listdir(HERE)):
         if not name.endswith(".py") or name in ("safe_write.py", "repo_state.py"):
             continue
-        if SITEMAP_WRITER.search(_read(name)):
+        src = _read(name)
+        if SITEMAP_IMPORT.search(src) and SITEMAP_WRITER.search(src):
             out.append(name)
     return out
 
@@ -126,10 +135,11 @@ def main() -> int:
     print(f"  actual <ins> ad units ...... {money['ad_units']}{note}")
 
     print("\nhazards")
-    print(f"  scripts that write sitemap.xml: {len(writers)} {writers}")
+    print(f"  scripts that call safe_write_sitemap: {len(writers)} {writers}")
     if len(writers) > 1:
-        print("     more than one writer means last-one-to-run wins; the curated sitemap")
-        print("     is a deliberate decision that a legacy writer would silently revert")
+        print("     only build_curated_sitemap.py can actually write it — the others are")
+        print("     refused by safe_write_sitemap(curated=...) and fail loudly if run.")
+        print("     Run check_sitemap_curated.py for the backstop.")
 
     print("\nbrand strings")
     print(f"  _config.yml title .......... {title.group(1) if title else 'none'}")
