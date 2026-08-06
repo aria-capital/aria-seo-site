@@ -24,37 +24,49 @@ SENTINEL = "aria-product-cta"
 
 # Ordered, most specific first — first match wins.
 # (regex over the filename slug, permalink, product name, one honest line)
+#
+# COPY RULE, and it is not a style preference: every line below describes the FORMAT and
+# SUBJECT of a study aid. None of them claims completeness, clinical authority, accuracy,
+# or fitness for patient care. Words deliberately removed after review on 2026-08-05:
+#   "Every code-cart drug"   -> a completeness claim about emergency medication
+#   "read ANY strip"         -> a completeness claim
+#   "escalate fastest"       -> a clinical judgement the site cannot support
+#   "the infusions YOU TITRATE" / "instead of from memory" -> implies bedside practice use
+# We are not clinicians and the site does not employ one. Describe the object, never the
+# clinical outcome. See CLAUDE.md standing priority 1 and 5: prefer removing a claim over
+# qualifying it.
+#
 RULES = [
     (r"ecg|ekg|12-lead|twelve-lead|rhythm|telemetry|arrhythmia|dysrhythmia|atrial-fib|svt|v-?tach",
      "wyjmqr", "12-Lead ECG Quick-Read Card",
-     "A step-by-step order for reading any strip, on one fold-up card."),
+     "A one-page study card on 12-lead ECG terminology and layout."),
     # (^|-) on epinephrine so "norepinephrine" does NOT match here — it is a titrated drip,
     # not a code-cart push, and it belongs to the infusions card below. Caught by a test.
     (r"acls|code-blue|code-cart|cardiac-arrest|resuscitat|(^|-)epinephrine|amiodarone|defibrillat",
      "kvppg", "ACLS Code Drug Pocket Card (2026)",
-     "Every code-cart drug on one fold-up reference."),
+     "A fold-up study card covering common code-cart medications."),
     (r"abg|blood-gas|acid-base|acidosis|alkalosis|ventilat|intubat|extubat|oxygenat|respiratory-failure|ards",
      "avsrc", "ICU ABG Interpretation Quick Guide",
-     "Work through a blood gas in a fixed order instead of from memory."),
+     "A study guide to arterial blood gas terminology and patterns."),
     (r"pressor|vasopressor|infusion|drip|titrat|norepinephrine|levophed|sepsis|septic|shock|hemodynamic",
      "bvezxw", "Critical-Care Infusions Pocket Card",
-     "The infusions you titrate at the bedside, collected on one card."),
+     "A study card covering common critical-care infusions."),
     (r"crrt|dialysis|prone|ecmo|arterial-line|a-line|swan|procedure|bedside-procedure",
      "ubwher", "ICU Critical Care Procedures Quick Reference",
-     "CRRT, proning, ECMO and arterial lines in one place."),
+     "A study reference covering CRRT, proning, ECMO and arterial lines."),
     (r"wound|ostomy|drain|catheter|central-line|picc|foley|chest-tube|tracheostomy|feeding-tube|device",
      "itikqo", "ICU Bedside Devices & Lines Quick Reference",
-     "The lines, tubes and devices at the bedside, one reference."),
+     "A study reference covering common ICU lines, tubes and devices."),
     (r"abdominal|gi-bleed|pancreatit|liver|hepatic|bowel|gastro|ileus|obstruction",
      "dpdvwf", "ICU Abdominal Emergencies Quick Reference",
-     "The abdominal emergencies that escalate fastest."),
+     "A study reference on abdominal conditions seen in critical care."),
     (r"ccrn|certification|cert-exam|critical-care-exam",
      "oolhqk", "CCRN Blueprint Study Guide",
-     "Organized around the CCRN blueprint, domain by domain."),
+     "An exam study guide organized around the CCRN blueprint."),
     # Broad clinical fallback — only for genuinely ICU/critical-care articles.
     (r"\bicu\b|intensive-care|critical-care|criticalcare",
      "qaebvo", "The ICU Notebook",
-     "Bedside references built for ICU shifts."),
+     "Study and reference guides written for ICU nurses."),
 ]
 
 BLOCK = """<!-- {sentinel} -->
@@ -64,6 +76,7 @@ BLOCK = """<!-- {sentinel} -->
   <p style="margin:0 0 12px;font-size:14px;line-height:1.5;color:#41576e;">{line}</p>
   <a href="{store}/l/{slug}" target="_blank" rel="noopener"
      style="display:inline-block;padding:9px 16px;background:#0057b8;color:#fff;text-decoration:none;border-radius:5px;font-size:14px;font-weight:600;">See what's on it &rarr;</a>
+  <p style="margin:12px 0 0;font-size:12px;line-height:1.5;color:#6b7f94;">Study material for nurses. Created with AI assistance. Not medical advice and not a substitute for your institution&#39;s protocols, pharmacy references, or clinical judgement &mdash; verify all doses independently.</p>
 </aside>
 <!-- /{sentinel} -->
 """

@@ -67,6 +67,52 @@ def test_sentinel_wraps_the_block_so_a_rerun_can_detect_it():
     assert block.count(f"<!-- /{I.SENTINEL} -->") == 1
 
 
+# --- claim safety ------------------------------------------------------------
+#
+# The owner is not a clinician and the site does not employ one. These guard the line
+# between "here is a study aid" and "here is something you can rely on at the bedside".
+
+BANNED = [
+    "every ",       # completeness claim about medication or content
+    "any strip",    # completeness claim
+    "all doses",
+    "complete guide to",
+    "accurate",
+    "reliable",
+    "trusted",
+    "verified",
+    "reviewed by",  # the RN-review claim that already cost this site twice
+    "licensed",
+    "rn-",
+    "guarantee",
+    "you titrate",  # implies use during patient care
+    "at the bedside, ",
+    "fastest",
+]
+
+
+def test_no_offer_line_makes_a_clinical_or_completeness_claim():
+    for _pattern, _permalink, name, line in I.RULES:
+        text = f"{name} {line}".lower()
+        for phrase in BANNED:
+            assert phrase not in text, f"{name!r} copy contains banned claim {phrase!r}"
+
+
+def test_every_block_carries_the_not_medical_advice_line():
+    for _pattern, permalink, name, line in I.RULES:
+        block = I.build(permalink, name, line).lower()
+        assert "not medical advice" in block
+        assert "verify all doses independently" in block
+        assert "created with ai assistance" in block
+
+
+def test_the_disclaimer_travels_with_the_offer_on_every_edited_article():
+    # 94 of the host articles carry no disclaimer of their own, so the block must not
+    # depend on the page it lands in.
+    for path, html in _articles_with_cta():
+        assert "not medical advice" in html.lower(), path
+
+
 # --- corpus-level invariants -------------------------------------------------
 
 
