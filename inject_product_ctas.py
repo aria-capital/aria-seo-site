@@ -36,37 +36,35 @@ SENTINEL = "aria-product-cta"
 # clinical outcome. See CLAUDE.md standing priority 1 and 5: prefer removing a claim over
 # qualifying it.
 #
+#
+# LIVE PRODUCTS ONLY — verified on the logged-out storefront 2026-08-05.
+# The nine clinical cards were unpublished that day over bedside-claim liability, so every
+# rule that pointed at one has been REMOVED rather than left to send readers at something
+# they cannot buy. A CTA for an unbuyable product is a wasted click and a broken promise.
+# When the clinical line returns with fixed artwork and study-aid copy, restore those rules
+# here — the machinery is unchanged, only this table moved.
+#
 RULES = [
-    (r"ecg|ekg|12-lead|twelve-lead|rhythm|telemetry|arrhythmia|dysrhythmia|atrial-fib|svt|v-?tach",
-     "wyjmqr", "12-Lead ECG Quick-Read Card",
-     "A one-page study card on 12-lead ECG terminology and layout."),
-    # (^|-) on epinephrine so "norepinephrine" does NOT match here — it is a titrated drip,
-    # not a code-cart push, and it belongs to the infusions card below. Caught by a test.
-    (r"acls|code-blue|code-cart|cardiac-arrest|resuscitat|(^|-)epinephrine|amiodarone|defibrillat",
-     "kvppg", "ACLS Code Drug Pocket Card (2026)",
-     "A fold-up study card covering common code-cart medications."),
-    (r"abg|blood-gas|acid-base|acidosis|alkalosis|ventilat|intubat|extubat|oxygenat|respiratory-failure|ards",
-     "avsrc", "ICU ABG Interpretation Quick Guide",
-     "A study guide to arterial blood gas terminology and patterns."),
-    (r"pressor|vasopressor|infusion|drip|titrat|norepinephrine|levophed|sepsis|septic|shock|hemodynamic",
-     "bvezxw", "Critical-Care Infusions Pocket Card",
-     "A study card covering common critical-care infusions."),
-    (r"crrt|dialysis|prone|ecmo|arterial-line|a-line|swan|procedure|bedside-procedure",
-     "ubwher", "ICU Critical Care Procedures Quick Reference",
-     "A study reference covering CRRT, proning, ECMO and arterial lines."),
-    (r"wound|ostomy|drain|catheter|central-line|picc|foley|chest-tube|tracheostomy|feeding-tube|device",
-     "itikqo", "ICU Bedside Devices & Lines Quick Reference",
-     "A study reference covering common ICU lines, tubes and devices."),
-    (r"abdominal|gi-bleed|pancreatit|liver|hepatic|bowel|gastro|ileus|obstruction",
-     "dpdvwf", "ICU Abdominal Emergencies Quick Reference",
-     "A study reference on abdominal conditions seen in critical care."),
-    (r"ccrn|certification|cert-exam|critical-care-exam",
-     "oolhqk", "CCRN Blueprint Study Guide",
-     "An exam study guide organized around the CCRN blueprint."),
-    # Broad clinical fallback — only for genuinely ICU/critical-care articles.
-    (r"\bicu\b|intensive-care|critical-care|criticalcare",
-     "qaebvo", "The ICU Notebook",
-     "Study and reference guides written for ICU nurses."),
+    # $97 — the flagship. CRNA application season runs Aug-Dec; this is the in-season asset.
+    (r"crna-school-application|crna-application|personal-statement|crna-school-interview|"
+     r"crna-admission|crna-school-acceptance|crna-essay|letters-of-recommendation|"
+     r"crna-school-resume|crna-shadow|crna-school-requirements|get-into-crna",
+     "mbuow", "The CRNA Application Guide",
+     "GPA benchmarks by program tier, a personal-statement framework, interview questions "
+     "and an 18-month application calendar."),
+    # $19.99 — earlier in the same journey: prerequisites, GPA repair, timing.
+    (r"crna-prereq|prerequisite|crna-school-cost|crna-gpa|science-gpa|crna-timeline|"
+     r"icu-experience|crna-programs|crna-school|crna\b|nurse-anesthet",
+     "qdubzb", "CRNA Prerequisite Planner",
+     "Track the prerequisites, science GPA and ICU hours each program expects, "
+     "on one planning sheet."),
+    # $27 — for nurses leaving the bedside who are not going the CRNA route.
+    (r"career-change|leave-bedside|beyond-the-bedside|non-bedside|nurse-career|career-pivot|"
+     r"nursing-jobs|job-interview|resume|informatics|case-management|utilization-review|"
+     r"infection-control|legal-nurse|nurse-educator|travel-nurse|per-diem",
+     "mmscsu", "Beyond the Bedside — Nurse Career Pivot Kit",
+     "Non-bedside nursing paths, what each one pays, and how to position your ICU "
+     "experience for them."),
 ]
 
 BLOCK = """<!-- {sentinel} -->

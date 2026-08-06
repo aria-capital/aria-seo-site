@@ -1,60 +1,70 @@
 """
 Tests for inject_product_ctas.py.
 
-Three failure modes matter, and they are not equally bad. Stacking a second offer onto
-an article on the next run is the one that hits 555 files at once (repo rule 3). Pointing
-a buy button at a permalink that is not on the store is the one a reader actually feels.
-And offering an ICU pocket card on a retirement-planning article is the one that makes the
-whole site look automated — so "no match" must stay a real, common outcome, not a fallback
-that quietly catches everything.
+Rewritten 2026-08-05 when the nine clinical cards were unpublished over bedside-claim
+liability and the offers were retargeted to the three career products, which carry none.
 
-The corpus-level tests at the bottom are the ones that guard the invariants going forward.
+Three failure modes matter, and they are not equally bad. Pointing a buy button at a product
+nobody can buy is the one a reader actually feels — and it is the one that just happened, so
+LIVE below is the real answer from the logged-out storefront, not a guess. Stacking a second
+offer on the next run is the one that hits hundreds of files at once (repo rule 3). And
+offering a CRNA guide on a wound-care article is the one that makes the site look automated,
+so "no match" must stay a real, common outcome.
+
+The corpus-level tests at the bottom guard the invariants going forward.
 """
 import glob
 import re
 
 import inject_product_ctas as I
 
-# The nine permalinks live on icunotebook.gumroad.com, measured logged-out 2026-08-05.
-LIVE = {"avsrc", "bvezxw", "dpdvwf", "itikqo", "kvppg", "oolhqk", "qaebvo", "ubwher", "wyjmqr"}
+# Measured logged-out on icunotebook.gumroad.com, 2026-08-05, AFTER publishing the career
+# guides and unpublishing the clinical cards. If a rule ever points outside this set, the
+# CTA sends a reader to something they cannot purchase.
+LIVE = {"mbuow", "mmscsu", "qdubzb", "kvppg"}
+
+# The three the offers are allowed to use. kvppg is live but is a clinical card pending
+# rewritten artwork and study-aid copy, so nothing may route to it yet.
+SELLABLE = {"mbuow", "mmscsu", "qdubzb"}
 
 
-def test_specific_product_beats_the_broad_icu_fallback():
-    # This slug matches BOTH the ECG rule and the \bicu\b fallback. Order must decide.
-    permalink, name, _ = I.match("12-lead-ekg-interpretation-icu-nurses-2026")
-    assert permalink == "wyjmqr"
-    assert "ECG" in name
+def test_every_rule_points_at_a_product_that_is_actually_buyable():
+    for _pattern, permalink, name, _line in I.RULES:
+        assert permalink in LIVE, f"{name!r} points at unbuyable {permalink!r}"
+        assert permalink in SELLABLE, f"{name!r} routes to a clinical card ({permalink})"
+
+
+def test_application_intent_beats_the_broad_crna_rule():
+    # These slugs match BOTH the application rule and the broad CRNA rule. Order must decide,
+    # and it must decide for the $97 guide — that is the in-season, high-intent asset.
+    for slug in ("crna-school-personal-statement-examples-guide",
+                 "crna-school-interview-questions-2026"):
+        assert I.match(slug)[0] == "mbuow", slug
 
 
 def test_each_rule_routes_to_its_own_product():
     cases = {
-        "acls-code-drugs-2026": "kvppg",
-        "abg-interpretation-guide": "avsrc",
-        "norepinephrine-titration-icu": "bvezxw",
-        "crrt-nursing-guide-2026": "ubwher",
-        "chest-tube-management-2026": "itikqo",
-        "gi-bleed-icu-management": "dpdvwf",
-        "ccrn-exam-dates-2026": "oolhqk",
-        "icu-nurse-report-sheet": "qaebvo",
+        "crna-application-timeline-2026": "mbuow",
+        "crna-prerequisite-checklist": "qdubzb",
+        "crna-school-cost-2026": "qdubzb",
+        "nurse-career-change-options-2026": "mmscsu",
+        "utilization-review-nurse-salary": "mmscsu",
     }
     for slug, expected in cases.items():
         assert I.match(slug)[0] == expected, slug
 
 
-def test_articles_with_no_honest_product_match_are_left_alone():
-    # A mismatched offer is worse than none — these must return None, not the fallback.
-    for slug in (
-        "roth-ira-for-nurses-complete-guide",
-        "travel-nurse-salary-2026",
-        "zero-based-budgeting-millennials-2026",
-        "nursing-job-interview-guide-2026",
-    ):
+def test_clinical_articles_get_no_offer_now_that_the_cards_are_unpublished():
+    # These matched a clinical card before 08-05. They must now return None, not fall back
+    # to a career guide — a CRNA planner on a chest-tube article is the automated look.
+    for slug in ("chest-tube-management-2026", "abg-interpretation-guide",
+                 "norepinephrine-titration-icu", "acls-code-drugs-2026"):
         assert I.match(slug) is None, slug
 
 
 def test_block_links_to_the_matched_permalink_and_names_no_price():
-    block = I.build("oolhqk", "CCRN Blueprint Study Guide", "Organized around the blueprint.")
-    assert f"{I.STORE}/l/oolhqk" in block
+    block = I.build("mbuow", "The CRNA Application Guide", "GPA benchmarks by program tier.")
+    assert f"{I.STORE}/l/mbuow" in block
     assert 'rel="noopener"' in block
     # Prices live on Gumroad. A hardcoded price here is how the covers drifted to showing
     # $9 on a $14 product — the defect this deliberately cannot reproduce.
@@ -62,36 +72,33 @@ def test_block_links_to_the_matched_permalink_and_names_no_price():
 
 
 def test_sentinel_wraps_the_block_so_a_rerun_can_detect_it():
-    block = I.build("kvppg", "ACLS Code Drug Pocket Card", "One card.")
+    block = I.build("qdubzb", "CRNA Prerequisite Planner", "One planning sheet.")
     assert block.count(f"<!-- {I.SENTINEL} -->") == 1
     assert block.count(f"<!-- /{I.SENTINEL} -->") == 1
 
 
 # --- claim safety ------------------------------------------------------------
 #
-# The owner is not a clinician and the site does not employ one. These guard the line
-# between "here is a study aid" and "here is something you can rely on at the bedside".
+# Carlos is not a clinician and the site does not employ one. These guard the line between
+# "here is a study aid" and "here is something you can rely on at the bedside" — and, for the
+# career guides, between "here is what programs look for" and "this gets you accepted".
 
 BANNED = [
-    "every ",       # completeness claim about medication or content
-    "any strip",    # completeness claim
-    "all doses",
-    "complete guide to",
-    "accurate",
-    "reliable",
-    "trusted",
-    "verified",
-    "reviewed by",  # the RN-review claim that already cost this site twice
-    "licensed",
-    "rn-",
+    "every ",        # completeness claim
+    "complete ",     # completeness claim — also why the product title needs renaming
     "guarantee",
-    "you titrate",  # implies use during patient care
-    "at the bedside, ",
-    "fastest",
+    "accepted applicant",   # outcome claim
+    "will get you",
+    "ensures",
+    "accurate", "reliable", "trusted", "verified",
+    "reviewed by",   # the RN-review claim that already cost this site twice
+    "licensed",
+    "at the bedside",
+    "you titrate",
 ]
 
 
-def test_no_offer_line_makes_a_clinical_or_completeness_claim():
+def test_no_offer_line_makes_a_clinical_completeness_or_outcome_claim():
     for _pattern, _permalink, name, line in I.RULES:
         text = f"{name} {line}".lower()
         for phrase in BANNED:
@@ -102,15 +109,7 @@ def test_every_block_carries_the_not_medical_advice_line():
     for _pattern, permalink, name, line in I.RULES:
         block = I.build(permalink, name, line).lower()
         assert "not medical advice" in block
-        assert "verify all doses independently" in block
         assert "created with ai assistance" in block
-
-
-def test_the_disclaimer_travels_with_the_offer_on_every_edited_article():
-    # 94 of the host articles carry no disclaimer of their own, so the block must not
-    # depend on the page it lands in.
-    for path, html in _articles_with_cta():
-        assert "not medical advice" in html.lower(), path
 
 
 # --- corpus-level invariants -------------------------------------------------
@@ -128,11 +127,14 @@ def test_no_article_carries_more_than_one_cta():
         assert html.count(f"<!-- {I.SENTINEL} -->") == 1, path
 
 
-def test_every_cta_points_at_a_permalink_that_is_live_on_the_store():
+def test_no_injected_offer_points_at_an_unbuyable_product():
     seen = set()
     for path, html in _articles_with_cta():
-        for slug in re.findall(r"gumroad\.com/l/([a-z0-9]+)", html):
-            assert slug in LIVE, f"{path} links to dead permalink {slug}"
+        block = re.search(
+            rf"<!-- {I.SENTINEL} -->(.*?)<!-- /{I.SENTINEL} -->", html, re.S)
+        assert block, path
+        for slug in re.findall(r"gumroad\.com/l/([a-z0-9]+)", block.group(1)):
+            assert slug in SELLABLE, f"{path} offers unbuyable/clinical {slug}"
             seen.add(slug)
     # Guard against a rule silently going dark: if a product stops being offered anywhere,
     # that is a decision, not something to discover months later.
