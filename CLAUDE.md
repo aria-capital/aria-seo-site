@@ -3,6 +3,36 @@
 Read this before changing anything. It records what broke here, why, and the rules that
 keep it from breaking again. Most of it was learned the expensive way.
 
+## Start here
+
+**Run `python repo_state.py` first. Believe it over this file.**
+
+This document has been substantially wrong at the start of three consecutive sessions —
+not through carelessness, but because it is written as a snapshot and read as current
+truth, and every fix widens the gap. One session opened with a Known-issues list where
+most items were already closed and burned an hour re-deriving that by hand. The next
+session closed the sitemap item, which made the list stale again the same day.
+`repo_state.py` prints the underlying numbers in two seconds; it exists so nobody pays
+that hour again.
+
+**The engineering backlog is essentially closed.** The corpus is clean (1,461 articles,
+zero damaged, empty baseline), both gates are strict and run on push, PR and nightly, and
+298 tests cover it. There is no pile of broken things left to find.
+
+**What remains is not engineering, and this is the part worth internalising:**
+
+- **No revenue channel works, and no code change makes one work.** AdSense is not approved
+  and there are zero `<ins>` ad units on the site; Amazon Associates enrolment is
+  unconfirmed; zero affiliate programs are approved; Google has indexed nothing. Every one
+  of those is an account action only the owner can take.
+- The remaining site-shape questions — the 852 homepage orphan cards, the three brand
+  identities — are curation decisions, not defects.
+
+So: **do not go looking for code to write.** If a session opens with no specific ask, the
+useful move is to say plainly what is blocked on the owner and stop, not to manufacture a
+refactor. A green test suite is not progress toward revenue, and this repo has already
+spent more sessions polishing the machine than the machine has ever earned.
+
 ## What this repo is
 
 A static SEO/affiliate site deployed via GitHub Pages: ~1,461 hand-generated HTML articles
@@ -122,22 +152,49 @@ The cookie-banner repair (599 files) is the template for this class of fix:
   verified without the owner typing the keyword
 - `workflowSizeGuideline: "large"` and `skipWorkflowUsageWarning: true` — workflows run
   without a size cap fight or an approval prompt
-- **`permissions.defaultMode` is NOT here — it lives in `.claude/settings.local.json`,
-  which is gitignored.** The owner does want `bypassPermissions` and asked for it
-  repeatedly; it is still in force on his machines. It was moved out of the committed file
-  on 2026-08-01 because **this repository is public**: a committed `bypassPermissions`
-  applies to whoever clones it, which is a stranger's session running with no approval
-  prompts on the strength of a file they didn't write. Local scope outranks project scope,
-  so the owner's experience is unchanged.
-  - If you are in a fresh clone and want it back for yourself, create
-    `.claude/settings.local.json` with `{"permissions":{"defaultMode":"bypassPermissions"}}`.
-  - **Do not move it back into `.claude/settings.json`.** That is the one change here that
-    is not the owner's to casually re-litigate — it protects people who are not him.
+- **no `permissions.defaultMode` key** — see the next section. The owner does run without
+  approval prompts; that setting just must not live in a *public* file.
 
-**Do not remove the rest of these to "be safe".** `ultracode`, `effortLevel` and the
-workflow keys are a deliberate, repeated decision by the repo owner, made after finding the
-prompt volume unworkable. If a future session finds them absent, it is because the session
-is on a branch that predates them, not because they were reconsidered.
+**Do not remove these to "be safe".** They are a deliberate, repeated decision by the repo
+owner, made after finding the prompt volume unworkable. If a future session finds them
+absent, it is because the session is on a branch that predates them, not because they were
+reconsidered.
+
+### Where `bypassPermissions` lives, and why not here
+
+The owner runs with approval prompts off. That is not in question and must not be narrowed.
+But it is configured in **`.claude/settings.local.json`**, which is untracked and gitignored,
+never in the committed `.claude/settings.json`. Two reasons, one of each kind:
+
+- **Ethical.** This repo is public. A committed `defaultMode` disables approval prompts for
+  anyone who clones it, on their machine, without them ever choosing that. The owner's
+  preference is his to make for his machines; it is not his to make for strangers.
+- **Empirical — it was never working here anyway.** Claude Code *refuses* bypass permission
+  modes under root: `--dangerously-skip-permissions cannot be used with root/sudo privileges
+  for security reasons`. Cloud containers run as root, so the committed line had no effect in
+  any cloud session. Verified by clean-room test on CLI 2.1.220, comparing a gated write
+  across user scope, project scope, and the CLI flag — all three blocked identically under
+  root, while the same write succeeded when permitted. It only ever mattered on a normal-user
+  machine, which is exactly where the local file now carries it.
+
+`localSettings` outranks `projectSettings` in the merge order, so the local file is a strict
+upgrade: same effect where it matters, zero publication.
+
+**On a fresh clone (a new Mac, a new machine), the local file does not exist** — it is
+gitignored, so it does not travel. Recreate it once per machine:
+
+```bash
+mkdir -p .claude && cat > .claude/settings.local.json <<'EOF'
+{"permissions": {"defaultMode": "bypassPermissions"}, "skipDangerousModePermissionPrompt": true}
+EOF
+```
+
+Held by `tests/test_claude_settings.py`, which fails if `defaultMode` reappears in the
+committed file, if a `model` key is pinned, if `ultracode`/`effortLevel` are dropped, or if
+the local file stops being ignored by **this repo's own** `.gitignore`. That last one is not
+pedantry: the cloud container ignores the path via a machine-level global gitignore that a
+Mac clone does not have, so without the in-repo rule the file is committable from the Mac and
+the leak returns by accident.
 
 ### Model policy — stated by the owner, 2026-08-01
 
@@ -237,6 +294,27 @@ determining which AdSense publisher ID was authoritative — provenance, git arc
 loader, and a loader with no slots renders nothing. The argument was about the label on an
 empty box. Ask "does this work at all?" before "which version of this is right?"
 
+**Lead with where the capability exists, not with what you cannot do.** The owner asked
+perhaps six times for Claude to drive his browser and click through AdSense. Each time he got
+an accurate explanation of why a cloud container cannot reach his Mac. All of it was true and
+none of it helped, and he had bought a Mac partly on the belief that it would work. The
+correct first answer was one line: *install Claude Code on the Mac, it drives Chrome there.*
+That took under ten minutes once actually attempted. Hours went into explaining a limitation
+instead of routing around it. When someone asks for something you cannot do, spend the effort
+finding the surface where it IS possible before spending any on the explanation.
+
+**Setup facts learned the same way, so nobody re-derives them:**
+- The install script is at `claude.ai/install.sh`, not `claude.com/install.sh` — the latter 404s.
+- Installing the Chrome extension is not enough. It must be SIGNED IN to the same account, or
+  `list_connected_browsers` returns empty and every browser call fails with "not connected".
+- Settings are read at startup only. Writing `~/.claude/settings.json` mid-session changes
+  nothing until Claude Code is restarted — verify with `/effort current` afterwards.
+- `CLAUDE.md` is only loaded when Claude starts INSIDE the folder containing it. A session
+  launched from the home directory knows none of this file. Clone the repo locally and launch
+  from within it, or the local session is blind while the cloud one is not.
+- The desktop app is the right recommendation for a non-technical owner: same capability as the
+  terminal CLI, but a real window. "It looks like a command tab" is a fair complaint.
+
 **ads.txt is fetched from the ROOT of the host, never a project subpath.**
 `aria-capital.github.io/ads.txt` is authoritative and lives in the *aria-capital.github.io*
 repo, which is a separate repository. The `ads.txt` in THIS repo sits at
@@ -268,6 +346,51 @@ already fine, where the right answer is known: the leaf rule predicted the true 
 the closing tag for 2,347 of 2,355 blocks, and the 8 misses became the refusal condition
 rather than a bug found later. A rule with a measured error rate can be given a matching
 guard; a rule that merely looks correct cannot.
+
+**These notes go stale faster than anyone expects — measure before you trust them.** Three
+sessions running, the Known-issues section was substantially wrong on arrival, and each
+time the wrongness pointed the same way: work listed as open was already done. The failure
+is structural, not sloppy — a snapshot read as current truth. `repo_state.py` is the fix;
+run it before planning anything. And when you close an item, fix the note in the same
+commit, because the next session cannot tell a stale bullet from a live one.
+
+**The measured half-life of a number in this file is about three hours.** Not a figure of
+speech. PR #6 merged at 09:58 carrying the bullet *"the sitemap question is unresolved…
+picking the 934 is the owner's call"*. PR #8 merged at 13:19 and curated the sitemap to
+940. The note was true when written, true when reviewed, true when merged, and false
+**3h21m later** — and it then sat there misinforming the next two sessions. Nobody was
+careless; several sessions land work in this repo on the same day, and prose cannot track
+that.
+
+So write Known-issues bullets to survive it: **state the hazard in prose and let
+`repo_state.py` supply the count.** "Four scripts can write the sitemap and three would
+revert the curation" stays true until someone fixes it; "the sitemap has 1,461 URLs" is
+false the moment anyone touches it. A sentence with a number in it has an expiry date, so
+either point at the reporter or accept that you are writing something with a deadline.
+
+**A source-inspection assertion must test the import, not the mention.** Three times in one
+session a test of the form `assert "safe_write" not in src` failed on a module that was
+*explaining* the symbol in a docstring or a removal comment. Documentation naming a thing
+looks identical to code calling it if you grep for the name. Assert on
+`^\s*from x import y` and on the call shape, never on bare presence — and expect the
+best-documented module to be the one that trips the naive version.
+
+**Adding a guard can create a half-write. Check the order of operations in every caller.**
+`safe_write_sitemap()` was taught to refuse the legacy writers, which was correct — but
+`seo_index_sync.main()` wrote `index.html` first and the sitemap second, so a real run
+would have rewritten the homepage with 852 cards and then died on the refusal. A guard that
+turns a completed bad run into a half-completed one has made things worse. The fix was to
+delete the sitemap write from that script entirely rather than reorder it: linking an
+article from the homepage and advertising it to crawlers are separate decisions, and it
+only owns the first.
+
+**Prove a repair script reproduces the tree, don't just prove it ran.** After the
+141-file block repair, the check that actually settled it was: `git archive HEAD` into a
+scratch dir, copy the scripts in, run them in order, `diff -rq` against the working tree.
+Zero differing files means the committed scripts genuinely produce the committed result —
+so a reviewer can re-derive 148 changed files instead of reading them, and a later session
+can re-run the repair without wondering whether the tree drifted from the code. Cheap, and
+much stronger than "it exited 0".
 
 **Confident inference is still inference.** The AdSense ID was chosen by git provenance and
 was wrong. The Amazon tag `ariacapital-20` was chosen the same way and is still UNVERIFIED —
@@ -358,20 +481,24 @@ Do not re-litigate these; they were measured, not assumed. Each is now held by a
 - **`?via=aria` placeholders**: none left.
 - **Canonicals and disclaimers**: every article has `rel="canonical"`; every clinical page
   carries disclaimer language.
+- **Only `build_curated_sitemap.py` can write the sitemap.** Four scripts called
+  `safe_write_sitemap()` and three of them would have replaced the curated file with a
+  full-corpus dump, silently, with every existing check still green. The write path now
+  requires a keyword-only `curated=True` that only the curator passes, so the other three
+  fail loudly at the moment of damage; `check_sitemap_curated.py` is the CI backstop for
+  writes that never reach `safe_write` at all. It asserts that no article below the
+  curator's quality floor is advertised — an invariant that survives content growth and
+  batch widening, where a byte- or set-comparison would go red on both.
 - **`generate_sitemap.read_base_url()`** no longer falls back to a dead host — it refuses.
 - **`seo_index_sync.linked_in_index()`** now matches any local href, so `privacy_policy.html`
   stops reading as an orphan on every run.
 
 ## Known issues
 
-- **Two scripts both write `sitemap.xml`** and disagree. `generate_sitemap.py` produces 1,461
-  URLs, `seo_index_sync.py --dry-run` says 1,458 and a different schema; the file on disk
-  matches neither exactly. Last one to run wins. **Unresolved, and do not resolve it by
-  running one of them** — see the sitemap warning in the vault section: the plan of record
-  wants a curated ~934-URL sitemap, not every URL, and a mass submission is manual-action
-  bait. Picking the 934 is the owner's call.
-- **`seo_index_sync.py` would add 852 orphan cards** to `index.html` on its next run. Whether
-  those articles should be linked from the homepage at all is the same curation decision.
+- **`seo_index_sync.py` would add 852 orphan cards** to `index.html` on its next run.
+  Whether those articles should be linked from the homepage at all is a curation decision
+  for the owner. (Its sitemap write is now blocked — see below — but its index write is
+  not, and that is the part still needing a decision.)
 - **`generate_sitemap.build()` writes `sitemap.xml` and `robots.txt` as a side effect**, and
   its `<lastmod>` comes from file mtime — so merely *calling* it to inspect the output
   rewrites the live sitemap with today's dates on every article you happen to have touched.
@@ -388,12 +515,20 @@ Do not re-litigate these; they were measured, not assumed. Each is now held by a
 - **1,255 `.fuse_hidden*` files are committed** — orphans from unclean FUSE unmounts, not
   byte-identical to any live article. Junk, but tracked, so removal is the owner's call.
 - **Three brand identities**: `_config.yml` says "Money Psychology", footers say "ICU
-  Notebook", the org is "aria-capital".
+  Notebook" (1,460 articles), the org is "aria-capital". "ARIA Capital Holdings LLC"
+  appears in 61 pages — that one is *correct* and must not be tidied away; it is the
+  publishing entity required by standing priority 2.
+- **The published contact address is inconsistent, and one form is a personal first name.**
+  `legal@ariacapitalholdings.com` on 47 pages, `info@` on 1, and
+  `carlos@ariacapitalholdings.com` on 27 (26 of which also carry the street address).
+  Raised with the owner; not changed, because redirecting a live business contact path is
+  his call and mail to a role alias that does not exist would simply vanish.
 
 ## Commands
 
 ```bash
-python -m pytest -q                              # 276 tests
+python repo_state.py                             # RUN FIRST — measured state; trust over these notes
+python -m pytest -q                              # 298 tests
 python check_article_corpus.py                   # CI gate: zero damaged HTML, no exceptions
 python check_article_corpus.py --update-baseline # after repairing files; refuses new damage
 python check_site_integrity.py                   # index.html + sitemap.xml; required in CI

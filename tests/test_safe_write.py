@@ -138,14 +138,16 @@ def test_sitemap_write_lands_when_locs_resolve(tmp_path, monkeypatch):
     (tmp_path / "real.html").write_text(GOOD, encoding="utf-8")
     xml = SITEMAP_TMPL.format(rows="  <url><loc>https://x.test/real.html</loc></url>")
     out = tmp_path / "sitemap.xml"
-    safe_write_sitemap(str(out), xml)
+    # curated=True throughout this section: these tests cover the atomic-write and
+    # validation mechanics, not the curation policy that the flag enforces.
+    safe_write_sitemap(str(out), xml, curated=True)
     assert out.exists()
 
 
 def test_sitemap_write_refuses_invalid_xml(tmp_path):
     out = tmp_path / "sitemap.xml"
     with pytest.raises(IntegrityError, match="invalid XML"):
-        safe_write_sitemap(str(out), "<urlset><url></urlset>")
+        safe_write_sitemap(str(out), "<urlset><url></urlset>", curated=True)
     assert not out.exists()
 
 
@@ -156,5 +158,5 @@ def test_sitemap_write_refuses_dangling_loc(tmp_path, monkeypatch):
     xml = SITEMAP_TMPL.format(rows="  <url><loc>https://x.test/ghost.html</loc></url>")
     out = tmp_path / "sitemap.xml"
     with pytest.raises(IntegrityError, match="missing file"):
-        safe_write_sitemap(str(out), xml)
+        safe_write_sitemap(str(out), xml, curated=True)
     assert not out.exists()
