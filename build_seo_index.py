@@ -12,7 +12,7 @@ from safe_write import safe_write_html, safe_write_sitemap
 # ── CONFIG ──────────────────────────────────────────────────────────────────
 SITE_DIR = os.path.dirname(os.path.abspath(__file__))
 BASE_URL = "https://aria-capital.github.io/aria-seo-site"
-GUMROAD_URL = "https://carrierostrujilloglz1991.gumroad.com/"  # update if slug differs
+GUMROAD_URL = "https://icunotebook.gumroad.com/"  # update if slug differs
 SKIP_FILES = {
     "index.html", "all-articles.html", "about.html", "contact.html",
     "privacy_policy.html", "privacy-policy.html", "affiliate-disclosure.html",

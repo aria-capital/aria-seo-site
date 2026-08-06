@@ -41,7 +41,7 @@ ARIA_HEADER_HTML = '''<header class="aria-header">
   <nav class="aria-nav">
     <a href="/aria-seo-site/">All Articles</a>
     <a href="https://nurse-finance.beehiiv.com" target="_blank" rel="noopener">Newsletter</a>
-    <a href="https://carlostrujillo.gumroad.com" target="_blank" rel="noopener">Resources</a>
+    <a href="https://icunotebook.gumroad.com" target="_blank" rel="noopener">Resources</a>
   </nav>
 </header>'''
 

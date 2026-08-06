@@ -19,3 +19,20 @@ Thumbs.db
 
 # Local logs
 *.log
+
+# --- Credential safety: this repo is PUBLIC. Nothing secret may ever be tracked. ---
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+id_rsa*
+id_ed25519*
+.obsidian/
+credentials.json
+service-account*.json
+
+# --- Local Claude Code settings: machine-specific, never committed. ---
+# permissions.defaultMode lives here, NOT in the committed settings.json, so that
+# cloning this public repo does not hand a stranger's session bypassPermissions.
+.claude/settings.local.json
