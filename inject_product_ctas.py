@@ -67,6 +67,14 @@ RULES = [
      "experience for them."),
 ]
 
+# DISCLAIMER RULE, learned 2026-08-07. All three products are CAREER guides. The block used to
+# close with "not a substitute for your institution's protocols, pharmacy references, or
+# clinical judgement — verify all doses independently", copied from the clinical line. On a
+# personal-statement article that sentence is nonsense, and it was live on all 382 of them.
+# A disclaimer aimed at the wrong risk is not a cautious disclaimer, it is a visible mistake:
+# it tells a CRNA applicant we were not reading our own page. Match the disclaimer to the
+# product's actual risk — here, admissions guidance that can go stale — and say the one useful
+# thing instead: program requirements vary, check them at the source.
 BLOCK = """<!-- {sentinel} -->
 <aside style="border:1px solid #d7e3f4;border-left:4px solid #0057b8;background:#f7fafd;border-radius:6px;padding:18px 20px;margin:28px 0;">
   <p style="margin:0 0 6px;font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:#5b7a9d;">From The ICU Notebook</p>
@@ -74,7 +82,7 @@ BLOCK = """<!-- {sentinel} -->
   <p style="margin:0 0 12px;font-size:14px;line-height:1.5;color:#41576e;">{line}</p>
   <a href="{store}/l/{slug}" target="_blank" rel="noopener"
      style="display:inline-block;padding:9px 16px;background:#0057b8;color:#fff;text-decoration:none;border-radius:5px;font-size:14px;font-weight:600;">See what's on it &rarr;</a>
-  <p style="margin:12px 0 0;font-size:12px;line-height:1.5;color:#6b7f94;">Study material for nurses. Created with AI assistance. Not medical advice and not a substitute for your institution&#39;s protocols, pharmacy references, or clinical judgement &mdash; verify all doses independently.</p>
+  <p style="margin:12px 0 0;font-size:12px;line-height:1.5;color:#6b7f94;">Study material for nurses. Created with AI assistance. Not medical advice, and not admissions, career or financial advice. Program requirements and deadlines vary &mdash; verify them with each program directly.</p>
 </aside>
 <!-- /{sentinel} -->
 """
@@ -91,21 +99,37 @@ def match(slug):
     return None
 
 
+BLOCK_RE = re.compile(rf"<!-- {SENTINEL} -->.*?<!-- /{SENTINEL} -->\n?", re.S)
+
+
+def refresh(html, permalink, name, line):
+    """Re-emit an existing block from the current template.
+
+    Follows the repair pattern in CLAUDE.md: excise the region between its own markers and
+    re-emit a canonical copy, so the no-op case is exact and a re-run changes nothing. This
+    is what lets a copy fix — like the 08-07 disclaimer — reach the 382 articles that already
+    carry a block, instead of needing a throwaway repair script that itself needs a test.
+
+    Uses a replacement *function* so the new text is inserted literally: a plain string
+    replacement would treat backslashes as group references. The same class of bug put
+    mangled text on a live product page the day this was written.
+    """
+    return BLOCK_RE.sub(lambda _m: build(permalink, name, line), html, count=1)
+
+
 def main():
     apply_changes = "--apply" in sys.argv
     if not apply_changes and "--dry-run" not in sys.argv:
         print("pass --dry-run or --apply")
         return 2
 
-    counts, skipped_nomatch, skipped_done, skipped_noanchor, written = {}, 0, 0, 0, 0
+    counts = {}
+    skipped_nomatch = skipped_noanchor = 0
+    added = refreshed = unchanged = 0
 
     for path in sorted(glob.glob("*.html")):
         slug = path[:-5].lower()
         html = open(path, encoding="utf-8").read()
-
-        if SENTINEL in html:
-            skipped_done += 1
-            continue
 
         hit = match(slug)
         if not hit:
@@ -113,27 +137,35 @@ def main():
             continue
         permalink, name, line = hit
 
-        # Insert above the first <h2 — after the headline and intro, high on the page.
-        anchor = re.search(r"<h2[\s>]", html)
-        if not anchor:
-            skipped_noanchor += 1
-            continue
-
-        at = anchor.start()
-        new = html[:at] + build(permalink, name, line) + html[at:]
+        if SENTINEL in html:
+            new = refresh(html, permalink, name, line)
+            if new == html:
+                unchanged += 1
+                continue
+            refreshed += 1
+        else:
+            # Insert above the first <h2 — after the headline and intro, high on the page.
+            anchor = re.search(r"<h2[\s>]", html)
+            if not anchor:
+                skipped_noanchor += 1
+                continue
+            at = anchor.start()
+            new = html[:at] + build(permalink, name, line) + html[at:]
+            added += 1
 
         counts[name] = counts.get(name, 0) + 1
-        written += 1
         if apply_changes:
             # Repo rule 1: never raw open(...,'w') on an article. This is a bulk edit
             # of pre-existing files, so allow_preexisting=True — refuse only on regression.
             safe_write_html(path, new, allow_preexisting=True)
 
-    print(("APPLIED" if apply_changes else "DRY RUN") + f" — {written} article(s) matched\n")
+    total = added + refreshed
+    print(("APPLIED" if apply_changes else "DRY RUN")
+          + f" — {total} article(s) to write ({added} new, {refreshed} refreshed)\n")
     for name in sorted(counts, key=lambda k: -counts[k]):
         print(f"  {counts[name]:5d}  {name}")
-    print(f"\n  {skipped_nomatch:5d}  no matching product — deliberately left alone")
-    print(f"  {skipped_done:5d}  already had a CTA (idempotent skip)")
+    print(f"\n  {unchanged:5d}  already correct (idempotent no-op)")
+    print(f"  {skipped_nomatch:5d}  no matching product — deliberately left alone")
     print(f"  {skipped_noanchor:5d}  no <h2> anchor — skipped")
     return 0
 

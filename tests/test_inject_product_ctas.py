@@ -112,6 +112,81 @@ def test_every_block_carries_the_not_medical_advice_line():
         assert "created with ai assistance" in block
 
 
+# --- the disclaimer has to be about the right risk ---------------------------
+#
+# Added 2026-08-07. Every product here is a CAREER guide. The block used to close with
+# "verify all doses independently", inherited from the clinical line, and shipped that way on
+# all 382 articles — telling someone reading about personal statements to check their drug
+# doses. A disclaimer aimed at the wrong risk reads as not having read your own page.
+
+CLINICAL_DISCLAIMER_LANGUAGE = [
+    "verify all doses",
+    "all doses independently",
+    "pharmacy reference",
+    "institution's protocols",
+    "institution&#39;s protocols",
+    "clinical judgement",
+    "clinical judgment",
+]
+
+
+def test_disclaimer_does_not_talk_about_drug_doses_on_career_products():
+    for _pattern, permalink, name, line in I.RULES:
+        block = I.build(permalink, name, line).lower()
+        for phrase in CLINICAL_DISCLAIMER_LANGUAGE:
+            assert phrase.lower() not in block, (
+                f"{name!r} carries clinical disclaimer language {phrase!r} — "
+                "every product in this table is a career guide")
+
+
+def test_disclaimer_says_the_one_useful_thing_for_an_applicant():
+    block = I.build("mbuow", "The CRNA Application Guide", "GPA benchmarks.").lower()
+    assert "verify them with each program directly" in block
+
+
+def test_no_live_article_still_carries_the_clinical_disclaimer():
+    offenders = [p for p, html in _articles_with_cta()
+                 if "verify all doses" in html.lower()]
+    assert not offenders, f"{len(offenders)} article(s) still carry it, e.g. {offenders[:3]}"
+
+
+# --- refresh ------------------------------------------------------------------
+
+
+def _article(block_html):
+    return f"<html><body><h1>T</h1><p>intro</p>{block_html}<h2>Body</h2></body></html>"
+
+
+def test_refresh_rewrites_a_stale_block_in_place():
+    stale = _article(
+        f"<!-- {I.SENTINEL} -->\n<aside>old copy, verify all doses independently</aside>\n"
+        f"<!-- /{I.SENTINEL} -->\n")
+    out = I.refresh(stale, "mbuow", "The CRNA Application Guide", "GPA benchmarks.")
+    assert "verify all doses" not in out
+    assert f"{I.STORE}/l/mbuow" in out
+    assert out.count(f"<!-- {I.SENTINEL} -->") == 1, "refresh must not stack a second block"
+
+
+def test_refresh_is_idempotent():
+    # Repo rule 3. Refreshing an already-current block must be a byte-exact no-op, which is
+    # what lets --apply be re-run casually without touching 382 files' mtimes.
+    current = _article(I.build("qdubzb", "CRNA Prerequisite Planner", "One planning sheet."))
+    once = I.refresh(current, "qdubzb", "CRNA Prerequisite Planner", "One planning sheet.")
+    twice = I.refresh(once, "qdubzb", "CRNA Prerequisite Planner", "One planning sheet.")
+    assert once == current
+    assert twice == once
+
+
+def test_refresh_inserts_replacement_text_literally():
+    # A plain string replacement would read backslashes and \\g as group references. A sed
+    # swap with the same flaw put mangled text on a live product page on 2026-08-07.
+    out = I.refresh(
+        _article(f"<!-- {I.SENTINEL} -->\n<aside>old</aside>\n<!-- /{I.SENTINEL} -->\n"),
+        "mmscsu", r"Kit \1 & \g<0>", r"Back\slash and & ampersand.")
+    assert r"Kit \1 & \g<0>" in out
+    assert r"Back\slash and & ampersand." in out
+
+
 # --- corpus-level invariants -------------------------------------------------
 
 
