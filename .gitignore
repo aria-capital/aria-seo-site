@@ -28,3 +28,8 @@ Thumbs.db
 # path via a global gitignore, but a Mac clone does not, so without this line the
 # file would be committable there.
 .claude/settings.local.json
+
+# Orphans from unclean FUSE unmounts — mid-write snapshots, never content.
+# 1,255 were tracked until 2026-08-07; verified first that none held the missing
+# text of the three truncated articles, then removed.
+.fuse_hidden*
