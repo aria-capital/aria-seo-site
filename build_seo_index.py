@@ -303,9 +303,9 @@ footer a{{color:#9ca3af;text-decoration:none}}
     <a href="index.html">Home</a> &nbsp;|&nbsp;
     <a href="privacy_policy.html">Privacy Policy</a> &nbsp;|&nbsp;
     <a href="affiliate-disclosure.html">Affiliate Disclosure</a> &nbsp;|&nbsp;
-    <a href="https://gumroad.com/l/aria-capital" target="_blank" rel="noopener">Shop on Gumroad</a>
+    <a href="{GUMROAD_URL}" target="_blank" rel="noopener">Shop on Gumroad</a>
   </p>
-  <p style="margin-top:8px;font-size:0.8em;">Guides for nurses, by a nurse-investor. Real numbers, no fluff.</p>
+  <p style="margin-top:8px;font-size:0.8em;">Study guides and reference material for nurses. Real numbers, no fluff.</p>
 </footer>
 </body>
 </html>"""
