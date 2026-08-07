@@ -59,13 +59,42 @@ RULES = [
      "Track the prerequisites, science GPA and ICU hours each program expects, "
      "on one planning sheet."),
     # $27 — for nurses leaving the bedside who are not going the CRNA route.
+    # `salary`, `second-career` and `interview-questions` added 2026-08-07: without them,
+    # icu-nurse-salary-*.html and icu-nurse-interview-questions.html fell through to the
+    # clinical rule below and were offered an ABG reference. Career rules sit ABOVE the
+    # clinical one precisely so the subject of the article wins over the word "icu" in it.
     (r"career-change|leave-bedside|beyond-the-bedside|non-bedside|nurse-career|career-pivot|"
-     r"nursing-jobs|job-interview|resume|informatics|case-management|utilization-review|"
+     r"nursing-jobs|job-interview|interview-questions|resume|salary|second-career|"
+     r"informatics|case-management|utilization-review|"
      r"infection-control|legal-nurse|nurse-educator|travel-nurse|per-diem",
      "mmscsu", "Beyond the Bedside — Nurse Career Pivot Kit",
      "Non-bedside nursing paths, what each one pays, and how to position your ICU "
      "experience for them."),
+    # $19.77 — the clinical line, restored 2026-08-07 exactly as the note above anticipated.
+    # The nine cards came back as ONE study bundle (`vrseeu`, 33 pages) with redrawn artwork
+    # and study-aid copy, so clinical articles have a live, buyable, honestly-framed
+    # destination again. Deliberately LAST in the table: a CRNA-application article that also
+    # mentions ABGs must still match the application guide first.
+    (r"abg|acid-base|ventilat|airway|intubat|extubat|ecg|ekg|arrhythmia|"
+     r"vasopressor|pressor|infusion|titrat|sedation|paralytic|code-cart|acls|"
+     r"cardiac-arrest|central-line|arterial-line|chest-tube|crrt|ecmo|swan|"
+     r"hemodynamic|shock|sepsis|icu-nurse|critical-care|nursing-guide",
+     "vrseeu", "The ICU Reference Set",
+     "Nine ICU quick references in one file &mdash; ABGs, airway, ECG, code drugs, "
+     "infusions, procedures, lines and devices."),
 ]
+
+# LEGACY BLOCK, removed 2026-08-07. Before this machinery existed, a different CTA was
+# stamped onto 117 clinical articles between <!-- gumroad-cta --> markers. Two things were
+# wrong with it and both were live:
+#   1. Its link pointed at a product that no longer exists. Six slugs (qaebvo, bvezxw,
+#      wyjmqr, ubwher, itikqo, avsrc) return HTTP 404 on the store, and two more
+#      (kvppg, dpdvwf) return 200 but are unpublished. 117 pages, every buying click wasted.
+#   2. It read "Need this at the bedside? ... fits in your scrubs pocket" — the exact
+#      bedside-use framing the clinical line was pulled for on 2026-08-05.
+# Excised here rather than patched: the block is obsolete, not merely wrong, and leaving a
+# second CTA style alive is how a fix reaches 382 pages and misses 117.
+LEGACY_RE = re.compile(r"[ \t]*<!-- gumroad-cta -->.*?<!-- /gumroad-cta -->\n?", re.S)
 
 # DISCLAIMER RULE, learned 2026-08-07. All three products are CAREER guides. The block used to
 # close with "not a substitute for your institution's protocols, pharmacy references, or
@@ -125,11 +154,22 @@ def main():
 
     counts = {}
     skipped_nomatch = skipped_noanchor = 0
-    added = refreshed = unchanged = 0
+    added = refreshed = unchanged = legacy_removed = 0
 
     for path in sorted(glob.glob("*.html")):
         slug = path[:-5].lower()
         html = open(path, encoding="utf-8").read()
+
+        # Strip the obsolete block first, on EVERY article — including ones with no product
+        # match. A dead buy-link is worse than no offer, so its removal must not depend on
+        # having something to put in its place.
+        if "<!-- gumroad-cta -->" in html:
+            stripped = LEGACY_RE.sub("", html)
+            if stripped != html:
+                html = stripped
+                legacy_removed += 1
+                if apply_changes and not match(slug):
+                    safe_write_html(path, html, allow_preexisting=True)
 
         hit = match(slug)
         if not hit:
@@ -143,6 +183,12 @@ def main():
                 unchanged += 1
                 continue
             refreshed += 1
+        elif html != open(path, encoding="utf-8").read() and not re.search(r"<h2[\s>]", html):
+            # legacy block stripped but nothing to anchor a replacement to — still a win
+            if apply_changes:
+                safe_write_html(path, html, allow_preexisting=True)
+            skipped_noanchor += 1
+            continue
         else:
             # Insert above the first <h2 — after the headline and intro, high on the page.
             anchor = re.search(r"<h2[\s>]", html)
@@ -164,7 +210,8 @@ def main():
           + f" — {total} article(s) to write ({added} new, {refreshed} refreshed)\n")
     for name in sorted(counts, key=lambda k: -counts[k]):
         print(f"  {counts[name]:5d}  {name}")
-    print(f"\n  {unchanged:5d}  already correct (idempotent no-op)")
+    print(f"\n  {legacy_removed:5d}  obsolete <!-- gumroad-cta --> block(s) removed (dead links + bedside framing)")
+    print(f"  {unchanged:5d}  already correct (idempotent no-op)")
     print(f"  {skipped_nomatch:5d}  no matching product — deliberately left alone")
     print(f"  {skipped_noanchor:5d}  no <h2> anchor — skipped")
     return 0

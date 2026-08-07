@@ -18,20 +18,30 @@ import re
 
 import inject_product_ctas as I
 
-# Measured logged-out on icunotebook.gumroad.com, 2026-08-05, AFTER publishing the career
-# guides and unpublishing the clinical cards. If a rule ever points outside this set, the
-# CTA sends a reader to something they cannot purchase.
-LIVE = {"mbuow", "mmscsu", "qdubzb", "kvppg"}
+# Re-measured logged-out on icunotebook.gumroad.com, 2026-08-07. The clinical line came back
+# that week — not as the nine cards, but as ONE 33-page study bundle (`vrseeu`) with redrawn
+# artwork and study-aid copy, which is the condition the 08-05 note set for restoring it. The
+# nine individual cards stay unbuyable: `kvppg` and `dpdvwf` return HTTP 200 but
+# `is_published=false`, and six more slugs are hard 404s.
+#
+# The guarantee this file exists to enforce has NOT changed: a buy button must never point at
+# something a reader cannot purchase. Only the measurement behind it has.
+LIVE = {"mbuow", "mmscsu", "qdubzb", "vrseeu", "wkcbuc"}
 
-# The three the offers are allowed to use. kvppg is live but is a clinical card pending
-# rewritten artwork and study-aid copy, so nothing may route to it yet.
-SELLABLE = {"mbuow", "mmscsu", "qdubzb"}
+# Everything live may be offered. kvppg is deliberately absent: it is unpublished, and it was
+# the single highest-liability listing in the catalogue.
+SELLABLE = {"mbuow", "mmscsu", "qdubzb", "vrseeu", "wkcbuc"}
+
+# Slugs measured DEAD on 2026-08-07 — six 404s plus two unpublished. 117 live article pages
+# were still linking to these, which is what prompted the sweep. Nothing may ever route here.
+DEAD = {"qaebvo", "bvezxw", "wyjmqr", "ubwher", "itikqo", "avsrc", "kvppg", "dpdvwf"}
 
 
 def test_every_rule_points_at_a_product_that_is_actually_buyable():
     for _pattern, permalink, name, _line in I.RULES:
         assert permalink in LIVE, f"{name!r} points at unbuyable {permalink!r}"
-        assert permalink in SELLABLE, f"{name!r} routes to a clinical card ({permalink})"
+        assert permalink in SELLABLE, f"{name!r} routes to a product we may not offer ({permalink})"
+        assert permalink not in DEAD, f"{name!r} routes to a DEAD slug ({permalink})"
 
 
 def test_application_intent_beats_the_broad_crna_rule():
@@ -54,12 +64,46 @@ def test_each_rule_routes_to_its_own_product():
         assert I.match(slug)[0] == expected, slug
 
 
-def test_clinical_articles_get_no_offer_now_that_the_cards_are_unpublished():
-    # These matched a clinical card before 08-05. They must now return None, not fall back
-    # to a career guide — a CRNA planner on a chest-tube article is the automated look.
+def test_clinical_articles_now_route_to_the_restored_study_bundle():
+    # REPLACES test_clinical_articles_get_no_offer_now_that_the_cards_are_unpublished.
+    # From 08-05 to 08-07 the right answer for these was None, because every clinical product
+    # was unpublished and an offer would have been a dead end. `vrseeu` is now live, so the
+    # right answer is the bundle. The thing that must NOT happen is unchanged and is asserted
+    # below: a chest-tube article must never be offered a CRNA planner.
     for slug in ("chest-tube-management-2026", "abg-interpretation-guide",
                  "norepinephrine-titration-icu", "acls-code-drugs-2026"):
-        assert I.match(slug) is None, slug
+        hit = I.match(slug)
+        assert hit is not None, slug
+        assert hit[0] == "vrseeu", f"{slug} routed to {hit[0]}, not the clinical bundle"
+
+
+def test_a_career_guide_is_never_offered_on_a_clinical_article():
+    for slug in ("chest-tube-management-2026", "abg-interpretation-guide",
+                 "vasopressor-titration-icu-nurses-2026", "crrt-troubleshooting-2026"):
+        assert I.match(slug)[0] not in {"mbuow", "mmscsu", "qdubzb"}, slug
+
+
+def test_the_subject_of_the_article_beats_the_word_icu_in_its_name():
+    # icu-nurse-salary-*.html matched the clinical rule before 08-07 and was offered an ABG
+    # reference. Career rules sit above the clinical one so the SUBJECT wins over the setting.
+    for slug in ("icu-nurse-salary-2026", "icu-nurse-salary-by-state-2026",
+                 "icu-nurse-interview-questions-2026", "second-career-nursing-guide-2026"):
+        assert I.match(slug)[0] == "mmscsu", slug
+
+
+def test_the_obsolete_bedside_block_is_excised_whole():
+    # 401 articles carried a pre-machinery CTA reading "Need this at the bedside? ... fits in
+    # your scrubs pocket", 117 of them linking a product that 404s. Removal must take the
+    # whole block including both markers, and must leave the rest of the document alone.
+    page = ('<h1>T</h1>\n<p>before</p>\n'
+            '<!-- gumroad-cta -->\n<div><p>Need this at the bedside?</p>\n'
+            '<a href="https://icunotebook.gumroad.com/l/wyjmqr">Get the Reference Card</a>\n'
+            '</div>\n<!-- /gumroad-cta -->\n<p>after</p>\n')
+    out = I.LEGACY_RE.sub("", page)
+    assert "gumroad-cta" not in out
+    assert "bedside" not in out
+    assert "wyjmqr" not in out
+    assert "<p>before</p>" in out and "<p>after</p>" in out
 
 
 def test_block_links_to_the_matched_permalink_and_names_no_price():
