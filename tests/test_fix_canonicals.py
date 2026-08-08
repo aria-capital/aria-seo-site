@@ -95,9 +95,24 @@ def test_every_live_page_has_exactly_one_on_host_canonical():
     import re
 
     base = fc.read_base_url()
-    files = [f for f in sorted(os.listdir(fc.HERE))
-             if f.endswith(".html") and f not in fc.SKIP]
+
+    # WALK, do not listdir. This assertion read as "every live page has exactly one
+    # on-host canonical" while the 15 pages under pet_care/ had NO canonical tag at
+    # all — because both the script and this test scanned the repo root only. The
+    # flat scan is what let a whole directory ship unprocessed and still go green.
+    files = []
+    for dirpath, dirnames, filenames in os.walk(fc.HERE):
+        dirnames[:] = [d for d in dirnames if d not in (".git", "tests", "store-covers")]
+        for f in filenames:
+            if not f.endswith(".html"):
+                continue
+            name = os.path.relpath(os.path.join(dirpath, f), fc.HERE)
+            if name in fc.SKIP or os.path.basename(name) in fc.SKIP:
+                continue
+            files.append(name)
+    files.sort()
     assert files, "no pages found"
+    assert any(os.sep in n for n in files), "scan is not reaching subdirectories"
 
     offenders = []
     for name in files:

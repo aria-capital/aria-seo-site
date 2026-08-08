@@ -98,7 +98,24 @@ def fix(text: str, want: str) -> tuple[str, str]:
 def main() -> int:
     dry = "--dry-run" in sys.argv
     base = read_base_url()
-    files = sorted(f for f in os.listdir(HERE) if f.endswith(".html") and f not in SKIP)
+    # Walk, do not listdir. `os.listdir(HERE)` sees the repo root only, so the 15
+    # pages under pet_care/ were never processed and shipped with NO canonical at
+    # all — and tests/test_fix_canonicals.py asserted "every live page has exactly
+    # one canonical" using the same flat scan, so it passed while the pages were
+    # broken. The same non-recursive assumption is why those pages are absent from
+    # the sitemap. `expected_url()` already handles a nested name correctly,
+    # because it just appends the repo-relative path to the base URL.
+    files = []
+    for dirpath, dirnames, filenames in os.walk(HERE):
+        dirnames[:] = [d for d in dirnames if d not in (".git", "tests", "store-covers")]
+        for f in filenames:
+            if not f.endswith(".html"):
+                continue
+            name = os.path.relpath(os.path.join(dirpath, f), HERE)
+            if name in SKIP or os.path.basename(name) in SKIP:
+                continue
+            files.append(name)
+    files = sorted(files)
 
     counts: dict[str, int] = {}
     refused = 0
