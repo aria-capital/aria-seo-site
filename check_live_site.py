@@ -134,11 +134,16 @@ def make_fetcher():
     ctx = ssl.create_default_context()  # already honors SSL_CERT_FILE
     for cand in (os.environ.get("CURL_CA_BUNDLE"), os.environ.get("REQUESTS_CA_BUNDLE"),
                  "/root/.ccr/ca-bundle.crt"):
-        if cand and Path(cand).is_file():
-            try:
+        if not cand:
+            continue
+        try:
+            if Path(cand).is_file():
                 ctx.load_verify_locations(cand)
-            except ssl.SSLError:
-                pass
+        except (OSError, ssl.SSLError):
+            # Unreadable (is_file raises EACCES for a non-root user probing /root —
+            # it only swallows not-found) or invalid: either way the bundle is not
+            # usable here and the default trust store still applies.
+            pass
 
     def fetch(url: str):
         last = None

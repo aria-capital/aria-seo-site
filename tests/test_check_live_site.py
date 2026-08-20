@@ -363,3 +363,20 @@ def test_every_advertised_committed_article_satisfies_the_monitors_predicates():
               or f"adsbygoogle.js?client=ca-{pub}" not in text):
             offenders.append(f"{f.name}: revenue tags missing")
     assert offenders == [], offenders[:10]
+
+
+def test_unreadable_ca_bundle_candidate_is_skipped_not_fatal(monkeypatch):
+    """The CI failure of 2026-08-20: on a runner where /root is unreadable,
+    Path.is_file() raises PermissionError (it only swallows not-found), and the
+    fetcher died before its first request. An unreadable bundle means 'not
+    available', never a crash."""
+
+    class DeniedPath:
+        def __init__(self, *a):
+            pass
+        def is_file(self):
+            raise PermissionError(13, "Permission denied")
+
+    monkeypatch.setattr(check_live_site, "Path", DeniedPath)
+    calls = _urlopen_sequence(monkeypatch, [(200, b"fine")])
+    assert make_fetcher()("https://x/") == (200, b"fine") and len(calls) == 1
