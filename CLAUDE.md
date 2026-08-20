@@ -507,8 +507,11 @@ Do not re-litigate these; they were measured, not assumed. Each is now held by a
   it from a fresh cloud session; it notifies the owner only on failure or on first signs
   of indexing life. It measures the machine, not the audience: indexing, traffic, and
   account approvals stay invisible until the owner connects Search Console / GA4 (the
-  Windsor.ai connector route — free plan, only YouTube connected as of 2026-08-19; the
-  nightly prompt auto-upgrades to real indexing numbers once a connection exists). Do not
+  Windsor.ai connector route — free plan, only YouTube connected as of 2026-08-19).
+  Caveat, measured at Routine creation: trigger-fired sessions run WITHOUT MCP
+  connectors, so indexing numbers reach the nightly report only if the Routine is
+  recreated from the claude.ai Routines UI with Windsor attached; until then any
+  interactive session can read them on demand once Search Console is connected. Do not
   build anything on Supermetrics — its trial was already expiring in 2026-08.
 
 ## Known issues
