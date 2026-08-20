@@ -492,6 +492,24 @@ Do not re-litigate these; they were measured, not assumed. Each is now held by a
 - **`generate_sitemap.read_base_url()`** no longer falls back to a dead host — it refuses.
 - **`seo_index_sync.linked_in_index()`** now matches any local href, so `privacy_policy.html`
   stops reading as an orphan on every run.
+- **The tracked `.fuse_hidden*` orphans are gone** — removed in d867a20d after the owner's
+  standing "whatever we need" go-ahead; `repo_state.py` counts zero.
+- **The DEPLOYED site is measured, not assumed.** `check_live_site.py` (2026-08-19) is a
+  read-only, stdlib-only checker that fetches the live GitHub Pages deployment and fails
+  loudly on what no repo-side gate can see: a stale or truncated deploy (homepage and a
+  rotating article sample byte-compared against the committed files), sitemap drift, a
+  blocking or sitemap-smuggling `robots.txt`, and any change to the HOST-ROOT `ads.txt` —
+  which lives in the separate `aria-capital.github.io` repo, is the only ads.txt Google
+  reads, and has no CI of its own. It was adversarially reviewed the day it was written;
+  the review found (and the fixes are pinned by tests): the root robots.txt was never
+  fetched, an extra rogue publisher line was invisible, and HTTP 5xx short-circuited the
+  retry. A nightly Routine ("Nightly live-site monitor", claude-code-remote triggers) runs
+  it from a fresh cloud session; it notifies the owner only on failure or on first signs
+  of indexing life. It measures the machine, not the audience: indexing, traffic, and
+  account approvals stay invisible until the owner connects Search Console / GA4 (the
+  Windsor.ai connector route — free plan, only YouTube connected as of 2026-08-19; the
+  nightly prompt auto-upgrades to real indexing numbers once a connection exists). Do not
+  build anything on Supermetrics — its trial was already expiring in 2026-08.
 
 ## Known issues
 
@@ -512,8 +530,6 @@ Do not re-litigate these; they were measured, not assumed. Each is now held by a
   one trailing sentence each. Finishing those sentences means writing content, which is a
   decision for the owner, not a repair. Everything recoverable was recovered — see
   `restore_truncated_blocks.py`.
-- **1,255 `.fuse_hidden*` files are committed** — orphans from unclean FUSE unmounts, not
-  byte-identical to any live article. Junk, but tracked, so removal is the owner's call.
 - **Three brand identities**: `_config.yml` says "Money Psychology", footers say "ICU
   Notebook" (1,460 articles), the org is "aria-capital". "ARIA Capital Holdings LLC"
   appears in 61 pages — that one is *correct* and must not be tidied away; it is the
@@ -532,6 +548,7 @@ python -m pytest -q                              # 298 tests
 python check_article_corpus.py                   # CI gate: zero damaged HTML, no exceptions
 python check_article_corpus.py --update-baseline # after repairing files; refuses new damage
 python check_site_integrity.py                   # index.html + sitemap.xml; required in CI
+python check_live_site.py                        # read-only: the DEPLOYED site + host-root ads.txt/robots.txt
 python fix_cookie_banner.py --dry-run            # every mutator has a dry run
 ```
 
