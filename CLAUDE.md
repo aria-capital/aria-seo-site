@@ -256,6 +256,44 @@ schema — the schema's "session-scoped" wording is misleading:
    and policy. It is kept in the file anyway because it is harmless, and it is redundant
    while ultracode is on: the ultracode gate short-circuits before the warning check runs.
 
+## The owner's standing order — where the line actually is
+
+From the ARIA vault (`autonomy-and-permissions.md`, 2026-07-27/28). It governs every
+session, including this repo's, and it is *more* permissive than sessions here have been
+acting — and *less* permissive in the one place that matters.
+
+> **Permission is not required to LOOK. Permission is required to CHANGE something outward.**
+>
+> Read, measure, grep, fetch, diff, stage, dry-run, write to memory, write to his documents —
+> **all unattended, no asking, no narrating the intention first.**
+> Push, publish, send, spend, delete, or stop a running service — **never unattended.**
+
+**So stop asking about reversible things.** His words: *"what have I told you about prompts?
+Just run them."* And the failure mode named in the file is the one sessions here keep
+repeating — *"narrating a plan instead of executing it… those are permission prompts wearing
+a question mark. **If the answer would obviously be yes, it was never a question.**"*
+
+**But the outward line is hard, and it is not about convenience.** Claude must never, on any
+surface including computer-use on the Mac: log into an account, type a password or API key,
+publish, delist, send, purchase, or click an irreversible control on his behalf.
+
+**Why — the precedent that settles it.** Blanket account access was offered twice in one night
+and declined twice. The "emergency" driving the second offer was a false credential believed
+to be live on his storefront. Inspection showed **no credential claim at all**; the fix had
+landed three days earlier. With account access, Claude would have **delisted the only product
+that ever made a sale, over a problem that did not exist.** The refusal preserved the listing.
+
+> **Urgency is when verification matters most, not least.** Every crisis that night — the
+> $45.30 dashboard, the "malicious" files that were his own handoff notes, the credential
+> claim — dissolved on inspection.
+
+**What this means for the AdSense work specifically.** Finishing setup means entering a payment
+address, verifying a phone, and connecting a site to a monetization account. That is outward
+and it is his. A session may prepare it — assemble the exact URLs, the order of screens, what
+each one will ask — and then hand him the keyboard. **Do not draft instructions telling another
+Claude surface to do those clicks for him;** that routes around the line rather than respecting
+it. (A cloud session did exactly that on 2026-08-09 before reading this file.)
+
 ## Standing priorities for this project
 
 The owner's goal is a business that earns without putting him at risk. In practice that
