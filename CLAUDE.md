@@ -494,6 +494,16 @@ Do not re-litigate these; they were measured, not assumed. Each is now held by a
   stops reading as an orphan on every run.
 - **The tracked `.fuse_hidden*` orphans are gone** — removed in d867a20d after the owner's
   standing "whatever we need" go-ahead; `repo_state.py` counts zero.
+- **The site is ALREADY verified with Google Search Console.** The `google-site-verification`
+  meta tag shipped on the homepage in b8476741 (2026-08-05 — after the org rename, so it
+  covers the live host) and is serving on the deployed page (checked 2026-08-20). Seeing
+  real indexing numbers is therefore a LOGIN, not a setup task: search.google.com/search-console.
+  If the Sitemaps panel there is empty, the one string to submit is the curated sitemap URL.
+  Until 2026-08-20 every plan treated GSC verification as an open owner task — it wasn't.
+  Do not use bulk "request indexing" from the console; the mass-submission warning stands.
+- **All 940 advertised pages are crawler-reachable from the homepage** within 3 clicks
+  (link-graph BFS, 2026-08-20). The plan-of-record's "make the best articles reachable"
+  goal is achieved; internal linking needs no further work.
 - **The DEPLOYED site is measured, not assumed.** `check_live_site.py` (2026-08-19) is a
   read-only, stdlib-only checker that fetches the live GitHub Pages deployment and fails
   loudly on what no repo-side gate can see: a stale or truncated deploy (homepage and a
