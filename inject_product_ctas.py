@@ -70,18 +70,28 @@ RULES = [
      "mmscsu", "Beyond the Bedside — Nurse Career Pivot Kit",
      "Non-bedside nursing paths, what each one pays, and how to position your ICU "
      "experience for them."),
-    # $19.77 — the clinical line, restored 2026-08-07 exactly as the note above anticipated.
-    # The nine cards came back as ONE study bundle (`vrseeu`, 33 pages) with redrawn artwork
-    # and study-aid copy, so clinical articles have a live, buyable, honestly-framed
-    # destination again. Deliberately LAST in the table: a CRNA-application article that also
-    # mentions ABGs must still match the application guide first.
-    (r"abg|acid-base|ventilat|airway|intubat|extubat|ecg|ekg|arrhythmia|"
-     r"vasopressor|pressor|infusion|titrat|sedation|paralytic|code-cart|acls|"
-     r"cardiac-arrest|central-line|arterial-line|chest-tube|crrt|ecmo|swan|"
-     r"hemodynamic|shock|sepsis|icu-nurse|critical-care|nursing-guide",
-     "vrseeu", "The ICU Reference Set",
-     "Nine ICU quick references in one file &mdash; ABGs, airway, ECG, code drugs, "
-     "infusions, procedures, lines and devices."),
+    # THE CLINICAL RULE IS REMOVED, 2026-08-23. It pointed at `vrseeu` ("The ICU Reference
+    # Set"), the bundle built from the nine cards, and it had reached 546 articles — the
+    # single most-linked destination on this site.
+    #
+    # It comes out because of `DO-NOT-SELL — clinical hold 2026-08-19`, which audited those
+    # cards dose by dose against the issuing bodies' current documents. Two findings sit on
+    # the ACLS card inside this bundle and either one is enough on its own:
+    #   * bradycardia atropine printed as 0.5 mg. It has been 1 mg since the 2020 algorithm,
+    #     and it is printed TWICE in two different sections, so correcting one leaves the
+    #     other live.
+    #   * `1 mg IV (10 mL of 0.1 mg/mL or 1 mL of 1:10,000)` — 1 mL of 1:10,000 is 0.1 mg.
+    #     Two options for the same drug differing by tenfold, on the most important drug in
+    #     a code.
+    #
+    # This is the same move the 2026-08-05 note above describes, for a stronger reason. That
+    # removal was about a product readers could not buy. This one is about a product they
+    # CAN buy, and should not: `l/vrseeu` returned HTTP 200 on 2026-08-23 with the deleted
+    # `l/itikqo` returning 404 as the control, so the 200 means what it says.
+    #
+    # DO NOT restore this rule on the strength of a model re-reading the file. The hold's own
+    # bar is a named clinician with current credentials signing off, or a product that
+    # carries no doses. Neither has happened. Restoring it re-links 546 pages in one run.
 ]
 
 # LEGACY BLOCK, removed 2026-08-07. Before this machinery existed, a different CTA was
@@ -95,6 +105,22 @@ RULES = [
 # Excised here rather than patched: the block is obsolete, not merely wrong, and leaving a
 # second CTA style alive is how a fix reaches 382 pages and misses 117.
 LEGACY_RE = re.compile(r"[ \t]*<!-- gumroad-cta -->.*?<!-- /gumroad-cta -->\n?", re.S)
+
+# HELD PRODUCT, 2026-08-23. Removing the rule above stops NEW blocks being written, but it
+# does nothing about the 546 already stamped into articles — those pages simply stop matching
+# any rule and get skipped, block intact. So the strip has to be its own unconditional pass,
+# exactly like the legacy one and for the same reason written there: a link to something a
+# reader should not buy must be removed whether or not we have anything to put in its place.
+#
+# Scoped by the slug appearing INSIDE a sentinel span, so it can never eat a career block.
+# Verified before running: all 546 occurrences of l/vrseeu sit inside a sentinel span, none
+# outside, one span per file.
+HELD_SLUG = "l/vrseeu"
+HELD_RE = re.compile(
+    rf"[ \t]*<!-- {SENTINEL} -->(?:(?!<!-- /{SENTINEL} -->).)*?{re.escape(HELD_SLUG)}"
+    rf".*?<!-- /{SENTINEL} -->\n?",
+    re.S,
+)
 
 # DISCLAIMER RULE, learned 2026-08-07. All three products are CAREER guides. The block used to
 # close with "not a substitute for your institution's protocols, pharmacy references, or
@@ -154,7 +180,7 @@ def main():
 
     counts = {}
     skipped_nomatch = skipped_noanchor = 0
-    added = refreshed = unchanged = legacy_removed = 0
+    added = refreshed = unchanged = legacy_removed = held_removed = 0
 
     for path in sorted(glob.glob("*.html")):
         slug = path[:-5].lower()
@@ -168,6 +194,18 @@ def main():
             if stripped != html:
                 html = stripped
                 legacy_removed += 1
+                if apply_changes and not match(slug):
+                    safe_write_html(path, html, allow_preexisting=True)
+
+        # Strip any block pointing at the HELD product, on EVERY article, for the same reason
+        # and by the same rule as the legacy strip directly above. This must run before the
+        # match: with the clinical rule gone those 546 pages match nothing, so without this
+        # they would be skipped with the block still in them.
+        if HELD_SLUG in html:
+            stripped = HELD_RE.sub("", html)
+            if stripped != html:
+                html = stripped
+                held_removed += 1
                 if apply_changes and not match(slug):
                     safe_write_html(path, html, allow_preexisting=True)
 
@@ -211,6 +249,7 @@ def main():
     for name in sorted(counts, key=lambda k: -counts[k]):
         print(f"  {counts[name]:5d}  {name}")
     print(f"\n  {legacy_removed:5d}  obsolete <!-- gumroad-cta --> block(s) removed (dead links + bedside framing)")
+    print(f"  {held_removed:5d}  HELD-product block(s) removed (l/vrseeu — clinical hold 2026-08-19)")
     print(f"  {unchanged:5d}  already correct (idempotent no-op)")
     print(f"  {skipped_nomatch:5d}  no matching product — deliberately left alone")
     print(f"  {skipped_noanchor:5d}  no <h2> anchor — skipped")

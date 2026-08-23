@@ -64,23 +64,41 @@ def test_each_rule_routes_to_its_own_product():
         assert I.match(slug)[0] == expected, slug
 
 
-def test_clinical_articles_now_route_to_the_restored_study_bundle():
-    # REPLACES test_clinical_articles_get_no_offer_now_that_the_cards_are_unpublished.
-    # From 08-05 to 08-07 the right answer for these was None, because every clinical product
-    # was unpublished and an offer would have been a dead end. `vrseeu` is now live, so the
-    # right answer is the bundle. The thing that must NOT happen is unchanged and is asserted
-    # below: a chest-tube article must never be offered a CRNA planner.
+def test_clinical_articles_get_no_offer_while_the_hold_stands():
+    # REPLACES test_clinical_articles_now_route_to_the_restored_study_bundle, 2026-08-23.
+    # The right answer for these slugs has now been None twice, for two different reasons.
+    # From 08-05 to 08-07 it was None because the clinical products were unpublished and an
+    # offer would have been a dead end. It is None again from 08-23, and this reason is much
+    # worse than a dead end: `vrseeu` is LIVE and buyable, and the 08-19 clinical hold found
+    # bradycardia atropine printed as 0.5 mg (1 mg since 2020, printed twice) and an
+    # epinephrine line whose two options differ by tenfold. An offer here is not a wasted
+    # click, it is a sale of a file with a wrong dose in it to an ICU nurse.
     for slug in ("chest-tube-management-2026", "abg-interpretation-guide",
                  "norepinephrine-titration-icu", "acls-code-drugs-2026"):
-        hit = I.match(slug)
-        assert hit is not None, slug
-        assert hit[0] == "vrseeu", f"{slug} routed to {hit[0]}, not the clinical bundle"
+        assert I.match(slug) is None, f"{slug} was offered a product while the hold stands"
+
+
+def test_the_held_product_cannot_be_reached_from_the_rules_table():
+    # A regression guard, not a style check. Restoring one line to RULES re-links 546
+    # articles in a single run, and the run reports it as a routine refresh. Any future
+    # session that wants this rule back has to delete this test first, and deleting a test
+    # named this is a decision rather than an oversight.
+    assert "vrseeu" not in str(I.RULES), (
+        "The held product is back in RULES. The hold's bar is a named clinician with "
+        "current credentials signing off, or a product carrying no doses — see the dated "
+        "note in inject_product_ctas.py."
+    )
+    assert I.HELD_SLUG == "l/vrseeu"
 
 
 def test_a_career_guide_is_never_offered_on_a_clinical_article():
+    # `match()` returns None for clinical slugs while the hold stands, so this asserts on the
+    # hit itself rather than subscripting it — the point is that a chest-tube article must
+    # never be handed a CRNA planner, whether or not any clinical rule exists.
     for slug in ("chest-tube-management-2026", "abg-interpretation-guide",
                  "vasopressor-titration-icu-nurses-2026", "crrt-troubleshooting-2026"):
-        assert I.match(slug)[0] not in {"mbuow", "mmscsu", "qdubzb"}, slug
+        hit = I.match(slug)
+        assert hit is None or hit[0] not in {"mbuow", "mmscsu", "qdubzb"}, slug
 
 
 def test_the_subject_of_the_article_beats_the_word_icu_in_its_name():
