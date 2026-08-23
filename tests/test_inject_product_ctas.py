@@ -26,22 +26,29 @@ import inject_product_ctas as I
 #
 # The guarantee this file exists to enforce has NOT changed: a buy button must never point at
 # something a reader cannot purchase. Only the measurement behind it has.
-LIVE = {"mbuow", "mmscsu", "qdubzb", "vrseeu", "wkcbuc"}
-
-# Everything live may be offered. kvppg is deliberately absent: it is unpublished, and it was
-# the single highest-liability listing in the catalogue.
-SELLABLE = {"mbuow", "mmscsu", "qdubzb", "vrseeu", "wkcbuc"}
+# RETARGETED 2026-08-23. Destinations are Etsy listings now, not Gumroad slugs — Gumroad
+# payouts have been frozen since 2026-07-13 pending an SSN, so a sale there reaches nobody.
+# The three below were read from the shop's own RSS feed the day of the switch, which is the
+# credential-free instrument for this shop: a datacentre fetch of an Etsy /listing/ URL
+# returns 403 for real and invented ids alike and proves nothing either way.
+GUIDE = "https://www.etsy.com/listing/4560718026/crna-application-guide-2027-cycle-icu"
+PLANNER = "https://www.etsy.com/listing/4560699705/crna-prerequisite-planner-track-icu"
+PIVOT = "https://www.etsy.com/listing/4559192954/beyond-the-bedside-nurse-career-pivot"
+SELLABLE = {GUIDE, PLANNER, PIVOT}
 
 # Slugs measured DEAD on 2026-08-07 — six 404s plus two unpublished. 117 live article pages
 # were still linking to these, which is what prompted the sweep. Nothing may ever route here.
-DEAD = {"qaebvo", "bvezxw", "wyjmqr", "ubwher", "itikqo", "avsrc", "kvppg", "dpdvwf"}
+# `vrseeu` joined them 2026-08-23 for a different and worse reason: it is not dead, it is
+# LIVE and buyable and under the 2026-08-19 clinical hold for a wrong atropine dose and a
+# tenfold epinephrine discrepancy. Unbuyable and must-not-be-bought both end here.
+DEAD = {"qaebvo", "bvezxw", "wyjmqr", "ubwher", "itikqo", "avsrc", "kvppg", "dpdvwf", "vrseeu"}
 
 
 def test_every_rule_points_at_a_product_that_is_actually_buyable():
-    for _pattern, permalink, name, _line in I.RULES:
-        assert permalink in LIVE, f"{name!r} points at unbuyable {permalink!r}"
-        assert permalink in SELLABLE, f"{name!r} routes to a product we may not offer ({permalink})"
-        assert permalink not in DEAD, f"{name!r} routes to a DEAD slug ({permalink})"
+    for _pattern, dest, name, _line in I.RULES:
+        assert dest in SELLABLE, f"{name!r} routes to a destination not on the sellable list ({dest})"
+        for slug in DEAD:
+            assert slug not in dest, f"{name!r} routes to a DEAD or HELD slug ({slug})"
 
 
 def test_application_intent_beats_the_broad_crna_rule():
@@ -49,19 +56,35 @@ def test_application_intent_beats_the_broad_crna_rule():
     # and it must decide for the $97 guide — that is the in-season, high-intent asset.
     for slug in ("crna-school-personal-statement-examples-guide",
                  "crna-school-interview-questions-2026"):
-        assert I.match(slug)[0] == "mbuow", slug
+        assert I.match(slug)[0] == "https://www.etsy.com/listing/4560718026/crna-application-guide-2027-cycle-icu", slug
 
 
 def test_each_rule_routes_to_its_own_product():
+    # Destinations became full URLs on 2026-08-23 when the table was retargeted from Gumroad
+    # (payouts frozen since 07-13) to Etsy. Asserting the URL rather than an opaque slug is
+    # the point: this test now says where a reader actually lands.
+    GUIDE = "https://www.etsy.com/listing/4560718026/crna-application-guide-2027-cycle-icu"
+    PLANNER = "https://www.etsy.com/listing/4560699705/crna-prerequisite-planner-track-icu"
+    PIVOT = "https://www.etsy.com/listing/4559192954/beyond-the-bedside-nurse-career-pivot"
     cases = {
-        "crna-application-timeline-2026": "mbuow",
-        "crna-prerequisite-checklist": "qdubzb",
-        "crna-school-cost-2026": "qdubzb",
-        "nurse-career-change-options-2026": "mmscsu",
-        "utilization-review-nurse-salary": "mmscsu",
+        "crna-application-timeline-2026": GUIDE,
+        "crna-prerequisite-checklist": PLANNER,
+        "crna-school-cost-2026": PLANNER,
+        "nurse-career-change-options-2026": PIVOT,
+        "utilization-review-nurse-salary": PIVOT,
     }
     for slug, expected in cases.items():
         assert I.match(slug)[0] == expected, slug
+
+
+def test_no_rule_points_at_the_channel_that_cannot_pay():
+    # Gumroad froze payouts 2026-07-13 pending an SSN only Carlos can supply. A CTA sending a
+    # reader there is a sale he does not receive. This fails loudly if any rule drifts back.
+    assert "gumroad" not in str(I.RULES).lower(), (
+        "A rule points at Gumroad. Payouts there are frozen; Etsy pays weekly from sale one."
+    )
+    for _pattern, dest, _name, _line in I.RULES:
+        assert dest.startswith("https://www.etsy.com/listing/"), dest
 
 
 def test_clinical_articles_get_no_offer_while_the_hold_stands():
@@ -98,7 +121,7 @@ def test_a_career_guide_is_never_offered_on_a_clinical_article():
     for slug in ("chest-tube-management-2026", "abg-interpretation-guide",
                  "vasopressor-titration-icu-nurses-2026", "crrt-troubleshooting-2026"):
         hit = I.match(slug)
-        assert hit is None or hit[0] not in {"mbuow", "mmscsu", "qdubzb"}, slug
+        assert hit is None or hit[0] not in {"https://www.etsy.com/listing/4560718026/crna-application-guide-2027-cycle-icu", "https://www.etsy.com/listing/4560699705/crna-prerequisite-planner-track-icu", "https://www.etsy.com/listing/4559192954/beyond-the-bedside-nurse-career-pivot"}, slug
 
 
 def test_the_subject_of_the_article_beats_the_word_icu_in_its_name():
@@ -106,7 +129,7 @@ def test_the_subject_of_the_article_beats_the_word_icu_in_its_name():
     # reference. Career rules sit above the clinical one so the SUBJECT wins over the setting.
     for slug in ("icu-nurse-salary-2026", "icu-nurse-salary-by-state-2026",
                  "icu-nurse-interview-questions-2026", "second-career-nursing-guide-2026"):
-        assert I.match(slug)[0] == "mmscsu", slug
+        assert I.match(slug)[0] == "https://www.etsy.com/listing/4559192954/beyond-the-bedside-nurse-career-pivot", slug
 
 
 def test_the_obsolete_bedside_block_is_excised_whole():
@@ -125,16 +148,16 @@ def test_the_obsolete_bedside_block_is_excised_whole():
 
 
 def test_block_links_to_the_matched_permalink_and_names_no_price():
-    block = I.build("mbuow", "The CRNA Application Guide", "GPA benchmarks by program tier.")
-    assert f"{I.STORE}/l/mbuow" in block
+    block = I.build(GUIDE, "The CRNA Application Guide", "GPA benchmarks by program tier.")
+    assert GUIDE in block
     assert 'rel="noopener"' in block
-    # Prices live on Gumroad. A hardcoded price here is how the covers drifted to showing
+    # Prices live on the storefront. A hardcoded price here is how the covers drifted to showing
     # $9 on a $14 product — the defect this deliberately cannot reproduce.
     assert "$" not in block
 
 
 def test_sentinel_wraps_the_block_so_a_rerun_can_detect_it():
-    block = I.build("qdubzb", "CRNA Prerequisite Planner", "One planning sheet.")
+    block = I.build(PLANNER, "CRNA Prerequisite Planner", "One planning sheet.")
     assert block.count(f"<!-- {I.SENTINEL} -->") == 1
     assert block.count(f"<!-- /{I.SENTINEL} -->") == 1
 
@@ -202,7 +225,7 @@ def test_disclaimer_does_not_talk_about_drug_doses_on_career_products():
 
 
 def test_disclaimer_says_the_one_useful_thing_for_an_applicant():
-    block = I.build("mbuow", "The CRNA Application Guide", "GPA benchmarks.").lower()
+    block = I.build(GUIDE, "The CRNA Application Guide", "GPA benchmarks.").lower()
     assert "verify them with each program directly" in block
 
 
@@ -223,18 +246,18 @@ def test_refresh_rewrites_a_stale_block_in_place():
     stale = _article(
         f"<!-- {I.SENTINEL} -->\n<aside>old copy, verify all doses independently</aside>\n"
         f"<!-- /{I.SENTINEL} -->\n")
-    out = I.refresh(stale, "mbuow", "The CRNA Application Guide", "GPA benchmarks.")
+    out = I.refresh(stale, GUIDE, "The CRNA Application Guide", "GPA benchmarks.")
     assert "verify all doses" not in out
-    assert f"{I.STORE}/l/mbuow" in out
+    assert GUIDE in out
     assert out.count(f"<!-- {I.SENTINEL} -->") == 1, "refresh must not stack a second block"
 
 
 def test_refresh_is_idempotent():
     # Repo rule 3. Refreshing an already-current block must be a byte-exact no-op, which is
     # what lets --apply be re-run casually without touching 382 files' mtimes.
-    current = _article(I.build("qdubzb", "CRNA Prerequisite Planner", "One planning sheet."))
-    once = I.refresh(current, "qdubzb", "CRNA Prerequisite Planner", "One planning sheet.")
-    twice = I.refresh(once, "qdubzb", "CRNA Prerequisite Planner", "One planning sheet.")
+    current = _article(I.build(PLANNER, "CRNA Prerequisite Planner", "One planning sheet."))
+    once = I.refresh(current, PLANNER, "CRNA Prerequisite Planner", "One planning sheet.")
+    twice = I.refresh(once, PLANNER, "CRNA Prerequisite Planner", "One planning sheet.")
     assert once == current
     assert twice == once
 
@@ -244,7 +267,7 @@ def test_refresh_inserts_replacement_text_literally():
     # swap with the same flaw put mangled text on a live product page on 2026-08-07.
     out = I.refresh(
         _article(f"<!-- {I.SENTINEL} -->\n<aside>old</aside>\n<!-- /{I.SENTINEL} -->\n"),
-        "mmscsu", r"Kit \1 & \g<0>", r"Back\slash and & ampersand.")
+        PIVOT, r"Kit \1 & \g<0>", r"Back\slash and & ampersand.")
     assert r"Kit \1 & \g<0>" in out
     assert r"Back\slash and & ampersand." in out
 
@@ -270,9 +293,13 @@ def test_no_injected_offer_points_at_an_unbuyable_product():
         block = re.search(
             rf"<!-- {I.SENTINEL} -->(.*?)<!-- /{I.SENTINEL} -->", html, re.S)
         assert block, path
-        for slug in re.findall(r"gumroad\.com/l/([a-z0-9]+)", block.group(1)):
-            assert slug in SELLABLE, f"{path} offers unbuyable/clinical {slug}"
-            seen.add(slug)
+        for href in re.findall(r'href="([^"]+)"', block.group(1)):
+            if not href.startswith("http"):
+                continue
+            assert href in SELLABLE, f"{path} offers a destination not on the sellable list: {href}"
+            for dead in DEAD:
+                assert dead not in href, f"{path} offers DEAD/HELD {dead}"
+            seen.add(href)
     # Guard against a rule silently going dark: if a product stops being offered anywhere,
     # that is a decision, not something to discover months later.
     assert seen, "no product CTA found in the corpus at all"
