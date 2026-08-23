@@ -55,8 +55,21 @@ DISCLAIMER = (
 )
 
 # A page is "clinical" if its slug names a drug, a device, or bedside management.
+#
+# WIDENED 2026-08-23. The original list was written to catch 13 known-missing pages and it
+# fit them exactly, which meant it had never been tested against a page it should catch and
+# didn't. Removing the held-product block from 546 articles exposed the gap: 18 pages lost
+# the only disclaimer language they carried, and the classifier declined ALL of them because
+# none of their slugs happened to contain one of the seven original words — including
+# `ecmo-nurse-guide`, `ed-sepsis-protocol-nurses`, `refractory-shock-second-line-agents` and
+# `acls-bls-nurse-certification-guide`. A classifier fitted to the cases that produced it
+# reports zero problems forever. The terms below are ordinary clinical subjects that should
+# have been here from the start, not a patch shaped around those 18 filenames.
 CLINICAL_SLUG = re.compile(
-    r"icu-nurses|vasopressor|ventilator|drip|sedation|guide-icu|nursing-guide", re.I
+    r"icu-nurses|vasopressor|ventilator|drip|sedation|guide-icu|nursing-guide|"
+    r"acls|\bbls\b|bls-nurse|ecmo|sepsis|shock|refractory|arrhythmi|intubat|extubat|"
+    r"paralytic|vasoactive|crrt|hemodynamic|code-drug|procedure-log",
+    re.I,
 )
 
 # Any of these means the page already discloses; do not add a second one.
