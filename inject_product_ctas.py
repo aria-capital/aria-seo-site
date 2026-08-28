@@ -66,6 +66,29 @@ RULES = [
      "The CRNA Application Guide",
      "GPA benchmarks by program tier, a personal-statement framework, interview questions "
      "and an 18-month application calendar."),
+    # $8.99 — ADDED 2026-08-28. This listing (4560725032, published 08-22) was linked from
+    # ZERO of the 1,462 pages: it was never added to this table, so the site sold three of the
+    # shop's four products and did not know the fourth existed. Meanwhile ~34 pages whose whole
+    # subject is *choosing between schools* — best-crna-programs-ranked-by-cost,
+    # cheapest-crna-schools, crna-school-cost — were falling through to the Prerequisite Planner
+    # below, because that rule's `crna\b` catches every CRNA page on the site.
+    #
+    # It sits ABOVE the planner deliberately, same reason the career rules sit above the
+    # clinical one: the subject of the article should win over a broad keyword inside it.
+    #
+    # The pattern is written from what the PRODUCT is (compare programs on cost, pass rate,
+    # length), not from the filenames it happened to match — the classifier that was fitted to
+    # its own 13 cases and then declined all 5 real ones is the cautionary tale here. Note it
+    # deliberately does NOT match `crna-vs-anesthesiologist`, `crna-vs-np` or `aa-vs-crna`:
+    # those compare CAREERS, not schools, and belong where they already point.
+    (r"best-crna-(programs|schools)|crna-(programs|schools)-ranked|cheapest-crna|"
+     r"crna-school-cost|crna-program-comparison|crna-school-comparison|compare-crna-"
+     r"|crna-(programs|schools)-by-state|crna-acceptance-rate|crna-pass-rate|"
+     r"crna-program-length|crna-school-list",
+     "https://www.etsy.com/listing/4560725032/crna-program-comparison-worksheet",
+     "CRNA Program Comparison Worksheet",
+     "Put the schools you are considering side by side on cost, pass rate and length — "
+     "the three numbers that decide it — on one printable sheet."),
     # $19.99 — earlier in the same journey: prerequisites, GPA repair, timing.
     (r"crna-prereq|prerequisite|crna-school-cost|crna-gpa|science-gpa|crna-timeline|"
      r"icu-experience|crna-programs|crna-school|crna\b|nurse-anesthet",
