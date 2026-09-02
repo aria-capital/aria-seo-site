@@ -394,11 +394,26 @@ keyboard, and do not treat it as a capability gap to route around.
   state before believing either story.
 - **`list_environments` returned only `anthropic_cloud` environments.** `create_session` still
   cannot spawn anything that runs on the Mac; the 2026-08-08 finding below stands.
-- **The Google Drive copies of the vault are a snapshot, not a mirror.** Every file in the
-  `AI Context` folder read that day was weeks stale. Drive is a genuine transport and the right
-  fallback when nothing else reaches, but it answers "what was true when this was copied,"
-  never "what is true now." Anything load-bearing needs the live vault through a Mac-side
-  session. The skill says it plainly: `aria status` measures, prose remembers.
+- **Drive holds BOTH a live export and a dead snapshot. Check the timestamp, never the
+  folder.** Sampling the `AI Context` folder found everything weeks stale, and a session
+  generalised that to "Drive is a snapshot, not a mirror" — wrong, and caught the same hour it
+  was written. `ARIA-CLOUD-MAP.md` is a rendered export from the Mac that lands with a
+  `.stamp` sidecar carrying `rendered-at-utc`, a sha256 prefix, a byte and record count, a
+  `withheld:` line naming anything deliberately omitted, and `verified: cmp-ok`. On 2026-09-02
+  it was rendered ~30 minutes before the session read it. That is a real Mac→cloud bridge that
+  already works, unattended, and it is the first thing a cloud session should reach for.
+  Read the `.stamp` before trusting the map — it is cheap, and it is the difference between
+  current state and a photograph. Stale elsewhere in Drive says nothing about it.
+- **UNRESOLVED — "the Obsidian vault" is not one place, and two sources contradict each other.**
+  A vault note dated 2026-07-27 records both Obsidian integrations built and tested live on the
+  Mac (an in-editor assistant on local models with Claude on demand, and the desktop app wired
+  to the vault over two MCP servers), and states the Local REST API plugin is installed on two
+  vaults. The `aria-session` skill, dated 2026-08-19 and marked "do not re-test," says both MCP
+  servers are dead and that plugin is *not* installed. Both cannot be true. The likeliest
+  explanation is that they describe **different vaults** — the same note says three are
+  registered, and the ARIA brain is not obviously any of the two it names. Settle which vault
+  is meant before acting on either source; a session that picks wrong will confidently
+  configure, or tear out, the wrong one. Do not copy either claim forward as settled.
 
 ## Cross-session messaging: what does NOT work, and the one thing that does
 
