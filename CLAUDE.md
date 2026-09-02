@@ -353,10 +353,64 @@ here.** Run `ListConnectors` in the session and read `installState` / `connected
 authenticated but toggled off for this chat: a settings toggle for the owner, not a dead end.
 Say which one.
 
+## Claude Code runs ON the Mac. Check that before concluding you cannot reach it.
+
+**The CLI is installed on the owner's Mac and works.** Proven 2026-09-02, not assumed: he ran
+`claude rc` there and it answered with a Claude Code error message, which a missing binary
+cannot do. This file already carried the *recommendation* ("install Claude Code on the Mac, it
+drives Chrome there") down in the lessons — and a session read that as advice not yet taken.
+It was taken. The `aria-session` skill holds the machine name, the vault path and the boot
+procedure; it is the source of truth for all three and they are deliberately not duplicated
+here, because this repo is public.
+
+**What that changes:** "a cloud container cannot reach your Mac" is true about *this* process
+and false about the fleet. There is a Claude on that Mac with direct access to the vault,
+`~/Library` and launchd — none of which any cloud session can touch. Route work there instead
+of explaining the limitation. That is the same failure this file already records costing hours
+over AdSense, and it was repeated on 2026-09-02 by a session that had read the warning.
+
+**The bridge from phone or cloud to that Mac is `claude rc`** (Remote Control), run from a
+terminal *in the folder you want it to work in* — the folder is the whole decision, because
+Claude Code only loads a `CLAUDE.md` from the directory it starts in. Started in the vault, the
+session IS in the Obsidian vault, editing the same markdown files Obsidian has open, with no
+plugin and no connector in the path. Started from `~`, it knows nothing.
+
+**It requires the CLI to be signed in** — `claude auth login`, a real shell subcommand, under
+the *same* claude.ai account as the session that wants to see the device. Signed out, `rc`
+fails with "You must be logged in to use Remote Control," and the error text points at
+`/login`, which only exists *inside* a session and is "command not found" at the shell prompt.
+A different account fails silently: the Mac simply never appears in the device list.
+
+**That sign-in is the owner's to type, every time.** It is an account login, which the standing
+order above puts permanently out of bounds on any surface. Assemble the commands, hand him the
+keyboard, and do not treat it as a capability gap to route around.
+
+### Measured 2026-09-02 — re-measure rather than trusting these
+
+- **The `File system` connector was `needs_reconnect`, `connected: false`.** That is the
+  folder-access bridge the `aria-session` skill's mount path depends on. Broken, it is *why* a
+  cloud session finds no mount and reports no path to the Mac — and from the inside, a
+  disconnected connector is indistinguishable from a capability that never existed. Read its
+  state before believing either story.
+- **`list_environments` returned only `anthropic_cloud` environments.** `create_session` still
+  cannot spawn anything that runs on the Mac; the 2026-08-08 finding below stands.
+- **The Google Drive copies of the vault are a snapshot, not a mirror.** Every file in the
+  `AI Context` folder read that day was weeks stale. Drive is a genuine transport and the right
+  fallback when nothing else reaches, but it answers "what was true when this was copied,"
+  never "what is true now." Anything load-bearing needs the live vault through a Mac-side
+  session. The skill says it plainly: `aria status` measures, prose remembers.
+
 ## Cross-session messaging: what does NOT work, and the one thing that does
 
 The owner runs a cloud session and a Cowork/desktop session on his Mac, and wants them to
 exchange state without pasting by hand.
+
+**Remote Control may be a second bus, and is UNTESTED as of 2026-09-02.** `ListAgents` in a
+cloud session documents itself as listing "Remote Control sessions on other machines" once RC
+is connected here, addressable by name through `SendMessage`. If that holds it beats the PR bus
+outright — direct, private, and not published to a public repo. Nobody has confirmed it,
+because the Mac has never been signed in and connected. Test it the first time `claude rc` is
+live; until then it is a tool description, which is not evidence.
 
 **The obvious mechanism is disabled and no config fixes it.** Verified 2026-08-08 against the
 live API: `create_trigger(persistent_session_id=...)` returns *"binding a trigger to another
@@ -399,6 +453,12 @@ correct first answer was one line: *install Claude Code on the Mac, it drives Ch
 That took under ten minutes once actually attempted. Hours went into explaining a limitation
 instead of routing around it. When someone asks for something you cannot do, spend the effort
 finding the surface where it IS possible before spending any on the explanation.
+
+  **That install happened — it is not still a suggestion.** See "Claude Code runs ON the Mac"
+  above. Written as advice, this paragraph read to a later session as advice *not yet acted
+  on*, and that session told the owner it had no path to his Mac while a working Claude Code
+  sat on it. A lesson phrased as a recommendation ages into a to-do; record the outcome next
+  to the recommendation or it will be re-bought.
 
 **Setup facts learned the same way, so nobody re-derives them:**
 - The install script is at `claude.ai/install.sh`, not `claude.com/install.sh` — the latter 404s.
