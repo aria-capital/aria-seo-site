@@ -371,9 +371,22 @@ over AdSense, and it was repeated on 2026-09-02 by a session that had read the w
 
 **The bridge from phone or cloud to that Mac is `claude rc`** (Remote Control), run from a
 terminal *in the folder you want it to work in* — the folder is the whole decision, because
-Claude Code only loads a `CLAUDE.md` from the directory it starts in. Started in the vault, the
-session IS in the Obsidian vault, editing the same markdown files Obsidian has open, with no
-plugin and no connector in the path. Started from `~`, it knows nothing.
+Claude Code only loads a `CLAUDE.md` from the directory it starts in. Started from `~`, a
+session knows nothing.
+
+**But `claude rc` is NOT how the owner gets his vault on his phone — git is, and it was already
+built.** A session spent an afternoon walking him toward Remote Control as the Obsidian answer
+while the Mac had settled it hours earlier by a different route entirely. Do not repeat that:
+Remote Control is for driving the Mac, not for reaching the vault.
+
+**Read `ARIA_BUS` in Drive BEFORE planning anything that touches the Mac.** That folder is the
+live bus between machines, and it is where the answer already was. Its conventions, learned the
+expensive way: `RUN-ME-*.md` is work a cloud session is handing to the Mac (written blind —
+nothing in one has run); `DONE-*.md` is the Mac reporting back what it actually did, measured;
+`ARIA-OPEN-ASK.md` is the one open human task; `ARIA-CLOUD-MAP.md` + its `.stamp` is the vault
+export. A session that greps the older vault folders, finds July files, and concludes the whole
+of Drive is stale will miss all of it — that happened on 2026-09-02, in the same session that
+had just written the warning about generalising from one folder.
 
 **It requires the CLI to be signed in** — `claude auth login`, a real shell subcommand, under
 the *same* claude.ai account as the session that wants to see the device. Signed out, `rc`
@@ -404,16 +417,24 @@ keyboard, and do not treat it as a capability gap to route around.
   already works, unattended, and it is the first thing a cloud session should reach for.
   Read the `.stamp` before trusting the map — it is cheap, and it is the difference between
   current state and a photograph. Stale elsewhere in Drive says nothing about it.
-- **UNRESOLVED — "the Obsidian vault" is not one place, and two sources contradict each other.**
-  A vault note dated 2026-07-27 records both Obsidian integrations built and tested live on the
-  Mac (an in-editor assistant on local models with Claude on demand, and the desktop app wired
-  to the vault over two MCP servers), and states the Local REST API plugin is installed on two
-  vaults. The `aria-session` skill, dated 2026-08-19 and marked "do not re-test," says both MCP
-  servers are dead and that plugin is *not* installed. Both cannot be true. The likeliest
-  explanation is that they describe **different vaults** — the same note says three are
-  registered, and the ARIA brain is not obviously any of the two it names. Settle which vault
-  is meant before acting on either source; a session that picks wrong will confidently
-  configure, or tear out, the wrong one. Do not copy either claim forward as settled.
+- **The MCP-vs-filesystem argument about Obsidian is MOOT — the Mac chose git.** Two older
+  sources contradict each other on whether the Obsidian MCP servers work (a 2026-07-27 vault
+  note says both were built and tested live with the Local REST API plugin installed on two
+  vaults; the `aria-session` skill, 2026-08-19 and marked "do not re-test," says both are dead
+  and the plugin is absent). Do not spend a session adjudicating that. On 2026-09-02 the Mac
+  made the whole question irrelevant: the vault is a private git repo that syncs hourly, and
+  the phone reads it through the Obsidian Git community plugin. No MCP server, no REST plugin,
+  no mount — and it works while Obsidian is closed. Verified independently from the cloud, not
+  taken on the note's word: the private repo exists and its `pushed_at` was seconds behind the
+  Drive export's render time, so the wire was live at the moment of checking.
+  - The sync deliberately excludes `state/`, `staging/`, `scratchpad/`, `tmp*`, `bin/` (those
+    scripts name credential paths), `.claude/`, and `*.bak-*`, and it scans every carried file
+    for credential VALUE shapes, withholding hits by name in `WITHHELD.md`. **So the GitHub
+    copy is not the vault** — anything under an excluded path exists only on the Mac. A session
+    reading the repo and concluding a file is missing is reading an intentional hole.
+  - Note also that "three vaults are registered" remains true, so "the Obsidian vault" is still
+    ambiguous in older prose. `ARIA-Brain` is the one with the git remote; that is the one that
+    matters now.
 
 ## Cross-session messaging: what does NOT work, and the one thing that does
 
