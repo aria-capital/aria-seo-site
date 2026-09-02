@@ -56,35 +56,37 @@ _HEAD = (
     'border:1px solid #e2e8f0;border-radius:8px;font-family:Georgia,serif;text-align:center;">\n'
     f"{HP}{{H}}</p>\n"
     f"{SP}{{S}}</p>\n"
-    '  <form action="https://embeds.beehiiv.com/pub_5335792c-a85c-4fd1-bca5-fd03e570f1d8/subscribe" '
-    'method="POST" target="_blank" style="display:flex;flex-direction:column;gap:10px;">\n'
+)
+
+# 2026-09-02 — THE FORM IS GONE ON PURPOSE. It POSTed to
+# embeds.beehiiv.com/pub_5335792c-.../subscribe, which renders "Not found" in a
+# real browser, byte-identical to a publication id that cannot exist, and had
+# been doing so on 1,359 live pages for at least 25 days. Measured with controls:
+# the same browser renders a working Email field and Subscribe button at
+# icu-notebook.beehiiv.com/subscribe, so "Not found" was a real answer and not a
+# blocked vantage. The bare-uuid variant was tested too and also 404s.
+# A LINK, not a repointed form: that subscribe page is a page, not a form
+# endpoint, so a POST would subscribe nobody, and a GET form would put a
+# visitor's email address into a URL query string where referrers and logs keep
+# it. beehiiv's own form does the capture instead.
+# DO NOT restore a <form> here without loading its target in a browser first.
+# A 200 from curl is what hid this for 25 days: the endpoint returned 200 and a
+# React shell that said "You need to enable JavaScript", and every status-code
+# check passed while every visitor saw "Not found".
+_CTA = (
+    '  <a href="https://icu-notebook.beehiiv.com/subscribe" target="_blank" rel="noopener" '
+    'style="display:inline-block;padding:12px 20px;background:#2563eb;color:#fff;border:none;'
+    'border-radius:6px;font-size:15px;font-weight:bold;text-decoration:none;cursor:pointer;">'
+    "Yes, send it free</a>\n"
 )
 _TAIL = (
-    "  </form>\n"
     '  <p style="margin:12px 0 0;font-size:12px;color:#718096;">No spam. Unsubscribe any time.</p>\n'
     "</div>"
 )
 
-NL_ICU = _HEAD + (
-    '    <input type="text" name="first_name" placeholder="First name" required\n'
-    '           style="padding:10px 14px;border:1px solid #cbd5e0;border-radius:6px;font-size:14px;" />\n'
-    '    <input type="email" name="email" placeholder="Your email" required\n'
-    '           style="padding:10px 14px;border:1px solid #cbd5e0;border-radius:6px;font-size:14px;" />\n'
-    "    <button type=\"submit\"\n"
-    '            style="padding:12px;background:#2563eb;color:#fff;border:none;border-radius:6px;'
-    'font-size:15px;font-weight:bold;cursor:pointer;">\n'
-    "      Yes, send it free\n"
-    "    </button>\n"
-) + _TAIL + "\n<!-- /email-capture -->"
+NL_ICU = _HEAD + _CTA + _TAIL + "\n<!-- /email-capture -->"
 
-NL_ARIA = _HEAD + (
-    '    <input type="text" name="first_name" placeholder="First name" required '
-    'style="padding:10px 14px;border:1px solid #cbd5e0;border-radius:6px;font-size:14px;" />\n'
-    '    <input type="email" name="email" placeholder="Your email" required '
-    'style="padding:10px 14px;border:1px solid #cbd5e0;border-radius:6px;font-size:14px;" />\n'
-    '    <button type="submit" style="padding:12px;background:#2563eb;color:#fff;border:none;'
-    'border-radius:6px;font-size:15px;font-weight:bold;cursor:pointer;">Yes, send it free</button>\n'
-) + _TAIL
+NL_ARIA = _HEAD + _CTA + _TAIL
 
 # The only (heading, subhead) pairs observed anywhere in the corpus or its history.
 TRIPLES = {
