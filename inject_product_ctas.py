@@ -22,7 +22,7 @@ from safe_write import safe_write_html
 # RETARGETED TO ETSY, 2026-08-23. Rules used to carry a Gumroad slug and the block built the
 # href as f"{STORE}/l/{slug}". They now carry the FULL destination URL, for two reasons.
 #
-# 1. Gumroad cannot pay him. Payouts have been frozen since 2026-07-13 pending an SSN, so
+# 1. Gumroad cannot pay him. Payouts have been frozen since 2026-07-13 pending account verification, so
 #    money landing there does not reach him. Etsy deposits weekly from the first sale. This
 #    site was sending 950 links to the channel that cannot pay and 33 to the one that can.
 # 2. A slug plus a hardcoded store is a destination this table cannot state. Whoever moves a

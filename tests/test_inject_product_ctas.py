@@ -27,7 +27,7 @@ import inject_product_ctas as I
 # The guarantee this file exists to enforce has NOT changed: a buy button must never point at
 # something a reader cannot purchase. Only the measurement behind it has.
 # RETARGETED 2026-08-23. Destinations are Etsy listings now, not Gumroad slugs — Gumroad
-# payouts have been frozen since 2026-07-13 pending an SSN, so a sale there reaches nobody.
+# payouts have been frozen since 2026-07-13 pending account verification, so a sale there reaches nobody.
 # The three below were read from the shop's own RSS feed the day of the switch, which is the
 # credential-free instrument for this shop: a datacentre fetch of an Etsy /listing/ URL
 # returns 403 for real and invented ids alike and proves nothing either way.
@@ -87,7 +87,7 @@ def test_each_rule_routes_to_its_own_product():
 
 
 def test_no_rule_points_at_the_channel_that_cannot_pay():
-    # Gumroad froze payouts 2026-07-13 pending an SSN only Carlos can supply. A CTA sending a
+    # Gumroad froze payouts 2026-07-13 pending verification only the owner can complete. A CTA sending a
     # reader there is a sale he does not receive. This fails loudly if any rule drifts back.
     assert "gumroad" not in str(I.RULES).lower(), (
         "A rule points at Gumroad. Payouts there are frozen; Etsy pays weekly from sale one."
