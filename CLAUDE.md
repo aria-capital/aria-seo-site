@@ -355,9 +355,18 @@ being careless:
   `HANDOFF.md`, `STATUS.md`, `memory/` (~600 records) and `WORKFLOW.md` answer most questions
   this file only gestures at. A shallow clone can sit an hour behind the vault's hourly sync —
   check with `git -C /home/user/aria-brain log -1` and refresh with
-  `git fetch --depth=1 origin main`. It carries a read-only damage checker, `vault-guard.py`;
-  run it before pushing anything, exactly as `check_article_corpus.py` is run here. `memory/INDEX.md`
-  is regenerated nightly and must never be hand-edited.
+  `git fetch --depth=1 origin main`. `memory/INDEX.md` is regenerated nightly and must never be
+  hand-edited. **The vault's own operating procedure is its `WORKFLOW.md`** — read that rather
+  than inferring a workflow, and note that its close step (`aria handoff`) and its hygiene step
+  (`aria doctor`) both live in `bin/`, which the sync excludes, so a cloud session has neither.
+  Write the handoff entry by hand in the existing format instead.
+  - Cautionary tale from the session that added this bullet: it found a `vault-guard.py` in the
+    working tree, read its docstring, and wrote "run it before pushing, exactly as
+    `check_article_corpus.py` is run here" into this file. That instruction was invented. The
+    script is not in the git remote, is referenced by no note in the vault, and appears nowhere
+    in `WORKFLOW.md`. It may be live and simply uncommitted, or abandoned — the Mac can tell in
+    a second and a cloud session cannot. **A docstring describes what a file does, never whether
+    anything runs it.** Check the call path before promoting a file to a procedure.
 
 **Read `HANDOFF.md` in that vault before reporting any ARIA state as current.** Several peer
 sessions land work in it on the same day. On 2026-09-02 a session offered the owner paste-ready
