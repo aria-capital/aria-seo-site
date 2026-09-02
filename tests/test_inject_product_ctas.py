@@ -34,7 +34,11 @@ import inject_product_ctas as I
 GUIDE = "https://www.etsy.com/listing/4560718026/crna-application-guide-2027-cycle-icu"
 PLANNER = "https://www.etsy.com/listing/4560699705/crna-prerequisite-planner-track-icu"
 PIVOT = "https://www.etsy.com/listing/4559192954/beyond-the-bedside-nurse-career-pivot"
-SELLABLE = {GUIDE, PLANNER, PIVOT}
+# The fourth product. Wired into RULES on 2026-08-28 (it had been linked from zero pages)
+# but never added here, so main went red that night and stayed red for five nightlies.
+# Re-read from the shop RSS feed 2026-09-02: exactly these four listings, this one included.
+WORKSHEET = "https://www.etsy.com/listing/4560725032/crna-program-comparison-worksheet"
+SELLABLE = {GUIDE, PLANNER, PIVOT, WORKSHEET}
 
 # Slugs measured DEAD on 2026-08-07 — six 404s plus two unpublished. 117 live article pages
 # were still linking to these, which is what prompted the sweep. Nothing may ever route here.
@@ -66,10 +70,15 @@ def test_each_rule_routes_to_its_own_product():
     GUIDE = "https://www.etsy.com/listing/4560718026/crna-application-guide-2027-cycle-icu"
     PLANNER = "https://www.etsy.com/listing/4560699705/crna-prerequisite-planner-track-icu"
     PIVOT = "https://www.etsy.com/listing/4559192954/beyond-the-bedside-nurse-career-pivot"
+    WORKSHEET = "https://www.etsy.com/listing/4560725032/crna-program-comparison-worksheet"
     cases = {
         "crna-application-timeline-2026": GUIDE,
         "crna-prerequisite-checklist": PLANNER,
-        "crna-school-cost-2026": PLANNER,
+        # Since 2026-08-28 the comparison rule sits above the planner and claims
+        # `crna-school-cost`: an article about choosing between schools on cost is the
+        # worksheet's subject, not the planner's.
+        "crna-school-cost-2026": WORKSHEET,
+        "best-crna-programs-2026": WORKSHEET,
         "nurse-career-change-options-2026": PIVOT,
         "utilization-review-nurse-salary": PIVOT,
     }
