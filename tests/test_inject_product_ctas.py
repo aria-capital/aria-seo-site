@@ -27,14 +27,23 @@ import inject_product_ctas as I
 # The guarantee this file exists to enforce has NOT changed: a buy button must never point at
 # something a reader cannot purchase. Only the measurement behind it has.
 # RETARGETED 2026-08-23. Destinations are Etsy listings now, not Gumroad slugs — Gumroad
-# payouts have been frozen since 2026-07-13 pending an SSN, so a sale there reaches nobody.
+# payouts have been frozen since 2026-07-13 pending account verification, so a sale there reaches nobody.
 # The three below were read from the shop's own RSS feed the day of the switch, which is the
 # credential-free instrument for this shop: a datacentre fetch of an Etsy /listing/ URL
 # returns 403 for real and invented ids alike and proves nothing either way.
 GUIDE = "https://www.etsy.com/listing/4560718026/crna-application-guide-2027-cycle-icu"
 PLANNER = "https://www.etsy.com/listing/4560699705/crna-prerequisite-planner-track-icu"
 PIVOT = "https://www.etsy.com/listing/4559192954/beyond-the-bedside-nurse-career-pivot"
+# The fourth product. Wired into RULES on 2026-08-28 (it had been linked from zero pages)
+# but never added here, so main went red that night and stayed red for five nightlies.
+# Re-read from the shop RSS feed 2026-09-02: exactly these four listings, this one included.
 WORKSHEET = "https://www.etsy.com/listing/4560725032/crna-program-comparison-worksheet"
+
+# CAREER is the set that existed before 2026-09-02, and it is named here because the
+# distinction now carries weight. Until today "sellable" and "career guide" were the same set,
+# so a test could say either and mean the other. They are different sets now, and the tests
+# below say which one they mean.
+CAREER = {GUIDE, PLANNER, PIVOT, WORKSHEET}
 
 # REPORT SHEETS, added 2026-09-02. Read from the shop's own RSS feed that day — the same
 # credential-free instrument the rest of this file uses, and the only one available: the Etsy
@@ -55,7 +64,7 @@ SBAR_SHEET = "https://www.etsy.com/listing/4567539159/sbar-nurse-report-sheet-sb
 BUNDLE_SHEET = "https://www.etsy.com/listing/4567527501/nurse-report-sheet-bundle-nursing-brain"
 SHEETS = {ICU_SHEET, ER_SHEET, CNA_SHEET, STUDENT_SHEET, MEDSURG_SHEET, SBAR_SHEET, BUNDLE_SHEET}
 
-SELLABLE = {GUIDE, PLANNER, PIVOT, WORKSHEET} | SHEETS
+SELLABLE = CAREER | SHEETS
 
 # Slugs measured DEAD on 2026-08-07 — six 404s plus two unpublished. 117 live article pages
 # were still linking to these, which is what prompted the sweep. Nothing may ever route here.
@@ -84,14 +93,12 @@ def test_each_rule_routes_to_its_own_product():
     # Destinations became full URLs on 2026-08-23 when the table was retargeted from Gumroad
     # (payouts frozen since 07-13) to Etsy. Asserting the URL rather than an opaque slug is
     # the point: this test now says where a reader actually lands.
-    # `crna-school-cost-2026` moved from PLANNER to WORKSHEET on 2026-08-28 and this case was
-    # never updated, so this test has been RED on the branch ever since — alongside two others,
-    # for the same root cause: the worksheet rule was added to inject_product_ctas.py and never
-    # added to SELLABLE here. Five days of a guard reporting a failure nobody read. Repo rule:
-    # check the exit code directly, never `| tail`.
     cases = {
         "crna-application-timeline-2026": GUIDE,
         "crna-prerequisite-checklist": PLANNER,
+        # Since 2026-08-28 the comparison rule sits above the planner and claims
+        # `crna-school-cost`: an article about choosing between schools on cost is the
+        # worksheet's subject, not the planner's.
         "crna-school-cost-2026": WORKSHEET,
         "best-crna-programs-2026": WORKSHEET,
         "nurse-career-change-options-2026": PIVOT,
@@ -109,7 +116,7 @@ def test_each_rule_routes_to_its_own_product():
 
 
 def test_no_rule_points_at_the_channel_that_cannot_pay():
-    # Gumroad froze payouts 2026-07-13 pending an SSN only Carlos can supply. A CTA sending a
+    # Gumroad froze payouts 2026-07-13 pending verification only the owner can complete. A CTA sending a
     # reader there is a sale he does not receive. This fails loudly if any rule drifts back.
     assert "gumroad" not in str(I.RULES).lower(), (
         "A rule points at Gumroad. Payouts there are frozen; Etsy pays weekly from sale one."
@@ -179,7 +186,13 @@ def test_a_career_guide_is_never_offered_on_a_clinical_article():
     for slug in ("chest-tube-management-2026", "abg-interpretation-guide",
                  "vasopressor-titration-icu-nurses-2026", "crrt-troubleshooting-2026"):
         hit = I.match(slug)
-        assert hit is None or hit[0] not in {"https://www.etsy.com/listing/4560718026/crna-application-guide-2027-cycle-icu", "https://www.etsy.com/listing/4560699705/crna-prerequisite-planner-track-icu", "https://www.etsy.com/listing/4559192954/beyond-the-bedside-nurse-career-pivot"}, slug
+        # Was `not in SELLABLE` until 2026-09-02, which was the same statement as this one for
+        # as long as every sellable product was a career guide. It stopped being the same
+        # statement the day the report sheets were added, and this test's NAME says which of
+        # the two it means: a CAREER GUIDE is never offered on a clinical article. A blank
+        # report sheet is not a career guide and is allowed here; the dose rule is enforced by
+        # test_a_clinical_article_is_never_offered_a_product_that_prints_doses.
+        assert hit is None or hit[0] not in CAREER, slug
 
 
 def test_the_subject_of_the_article_beats_the_word_icu_in_its_name():

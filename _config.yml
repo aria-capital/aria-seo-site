@@ -18,3 +18,9 @@ exclude:
   - new_articles_batch3.txt
   - new_articles_buyer_intent.txt
   - tests
+  # NEVER exclude a bare filename that is a PREFIX of another file. GitHub Pages builds with
+  # Jekyll 3.10, whose exclude filter matches by string prefix as well as by glob, so an entry
+  # `feed` would also drop feeding-intolerance-gastric-residuals-icu-nurses-2026.html — a live,
+  # sitemap-advertised article. Found in review on 2026-09-02, before it shipped. Files that
+  # must stop being served go under an underscore directory instead (Jekyll skips those by
+  # default): the two dead "Midnight Brief" RSS feeds now live in _unpublished_feeds/.
