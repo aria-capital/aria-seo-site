@@ -337,6 +337,35 @@ ToolSearch "<the capability>"     # deferred tools are NOT in the prompt; they m
 /root/.claude/launcher-settings.json, /root/.claude/settings.json   # what the harness grants
 ```
 
+**Run `ls /home/user/` FIRST, before any of the three above.** All three measure *remote*
+capability, and on 2026-09-02 a session passed all three and was still wrong four times in one
+afternoon — it told the owner his Mac, Google Drive, the ARIA vault and a closed Etsy task were
+all out of reach. The vault was **cloned on local disk the whole session**, at
+`/home/user/aria-brain`. The thing being searched for was nearer than every place searched.
+
+Two mechanics make this trap reliable, so treat it as structural rather than as one session
+being careless:
+
+- **The system prompt's Repository Scope list is a boot snapshot, not a disk inventory.** It
+  named only `aria-seo-site` while `aria-capital/ARIA-Brain` was attached and unlisted. Attached
+  repos are never announced; `add_repo` on one already present just returns `already_present`
+  with its path. The only way to know is to look.
+- **The ARIA vault is a private GitHub repo and this org's sessions can read it.** That is the
+  single highest-value thing a session here can reach, and no session knew it until now:
+  `HANDOFF.md`, `STATUS.md`, `memory/` (~600 records) and `WORKFLOW.md` answer most questions
+  this file only gestures at. A shallow clone can sit an hour behind the vault's hourly sync —
+  check with `git -C /home/user/aria-brain log -1` and refresh with
+  `git fetch --depth=1 origin main`. It carries a read-only damage checker, `vault-guard.py`;
+  run it before pushing anything, exactly as `check_article_corpus.py` is run here. `memory/INDEX.md`
+  is regenerated nightly and must never be hand-edited.
+
+**Read `HANDOFF.md` in that vault before reporting any ARIA state as current.** Several peer
+sessions land work in it on the same day. On 2026-09-02 a session offered the owner paste-ready
+text for an Etsy task another session had finished eight hours earlier — and the handoff entry
+recording that closure also warned, in plain words, that the shop RSS is CDN-stale, which was the
+very instrument the session used to "confirm" the task was still open. `HANDOFF.md` is state; the
+Drive bus is a queue artifact and lags.
+
 Deferred tools are the trap. Only a fraction of the toolset is listed up front; the rest exist
 but stay invisible until `ToolSearch` surfaces them. "It is not in my tool list" is therefore
 evidence of nothing. Neither is "I checked at the start" — connectors appear mid-session.
