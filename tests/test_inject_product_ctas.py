@@ -27,14 +27,18 @@ import inject_product_ctas as I
 # The guarantee this file exists to enforce has NOT changed: a buy button must never point at
 # something a reader cannot purchase. Only the measurement behind it has.
 # RETARGETED 2026-08-23. Destinations are Etsy listings now, not Gumroad slugs — Gumroad
-# payouts have been frozen since 2026-07-13 pending an SSN, so a sale there reaches nobody.
+# payouts have been frozen since 2026-07-13 pending account verification, so a sale there reaches nobody.
 # The three below were read from the shop's own RSS feed the day of the switch, which is the
 # credential-free instrument for this shop: a datacentre fetch of an Etsy /listing/ URL
 # returns 403 for real and invented ids alike and proves nothing either way.
 GUIDE = "https://www.etsy.com/listing/4560718026/crna-application-guide-2027-cycle-icu"
 PLANNER = "https://www.etsy.com/listing/4560699705/crna-prerequisite-planner-track-icu"
 PIVOT = "https://www.etsy.com/listing/4559192954/beyond-the-bedside-nurse-career-pivot"
-SELLABLE = {GUIDE, PLANNER, PIVOT}
+# The fourth product. Wired into RULES on 2026-08-28 (it had been linked from zero pages)
+# but never added here, so main went red that night and stayed red for five nightlies.
+# Re-read from the shop RSS feed 2026-09-02: exactly these four listings, this one included.
+WORKSHEET = "https://www.etsy.com/listing/4560725032/crna-program-comparison-worksheet"
+SELLABLE = {GUIDE, PLANNER, PIVOT, WORKSHEET}
 
 # Slugs measured DEAD on 2026-08-07 — six 404s plus two unpublished. 117 live article pages
 # were still linking to these, which is what prompted the sweep. Nothing may ever route here.
@@ -66,10 +70,15 @@ def test_each_rule_routes_to_its_own_product():
     GUIDE = "https://www.etsy.com/listing/4560718026/crna-application-guide-2027-cycle-icu"
     PLANNER = "https://www.etsy.com/listing/4560699705/crna-prerequisite-planner-track-icu"
     PIVOT = "https://www.etsy.com/listing/4559192954/beyond-the-bedside-nurse-career-pivot"
+    WORKSHEET = "https://www.etsy.com/listing/4560725032/crna-program-comparison-worksheet"
     cases = {
         "crna-application-timeline-2026": GUIDE,
         "crna-prerequisite-checklist": PLANNER,
-        "crna-school-cost-2026": PLANNER,
+        # Since 2026-08-28 the comparison rule sits above the planner and claims
+        # `crna-school-cost`: an article about choosing between schools on cost is the
+        # worksheet's subject, not the planner's.
+        "crna-school-cost-2026": WORKSHEET,
+        "best-crna-programs-2026": WORKSHEET,
         "nurse-career-change-options-2026": PIVOT,
         "utilization-review-nurse-salary": PIVOT,
     }
@@ -78,7 +87,7 @@ def test_each_rule_routes_to_its_own_product():
 
 
 def test_no_rule_points_at_the_channel_that_cannot_pay():
-    # Gumroad froze payouts 2026-07-13 pending an SSN only Carlos can supply. A CTA sending a
+    # Gumroad froze payouts 2026-07-13 pending verification only the owner can complete. A CTA sending a
     # reader there is a sale he does not receive. This fails loudly if any rule drifts back.
     assert "gumroad" not in str(I.RULES).lower(), (
         "A rule points at Gumroad. Payouts there are frozen; Etsy pays weekly from sale one."
