@@ -497,10 +497,16 @@ Do not re-litigate these; they were measured, not assumed. Each is now held by a
 - **The site is ALREADY verified with Google Search Console.** The `google-site-verification`
   meta tag shipped on the homepage in b8476741 (2026-08-05 — after the org rename, so it
   covers the live host) and is serving on the deployed page (checked 2026-08-20). Seeing
-  real indexing numbers is therefore a LOGIN, not a setup task: search.google.com/search-console.
-  If the Sitemaps panel there is empty, the one string to submit is the curated sitemap URL.
-  Until 2026-08-20 every plan treated GSC verification as an open owner task — it wasn't.
-  Do not use bulk "request indexing" from the console; the mass-submission warning stands.
+  real indexing numbers is therefore a LOGIN, not a setup task: search.google.com/search-console
+  (URL-prefix property `https://aria-capital.github.io/aria-seo-site/`; an `sc-domain:` attempt
+  fails with "can't access" — wrong resource id, not a lost account). The owner read it on
+  2026-08-19 and 08-22: 1 page indexed (the homepage), 0 clicks, and the sitemap entry stuck on
+  "could not read / 0 discovered" even though the file is valid XML in the sitemaps.org
+  namespace and Googlebot fetches it live (verified 2026-09-02). The entry was removed and
+  re-added on 08-23; nobody has looked since. Do not touch the sitemap again — the cause of
+  non-indexing is that ZERO external sites link here (vault findings of 08-19/08-23), which no
+  repo change fixes. Until 2026-08-20 every plan treated GSC verification as an open owner
+  task — it wasn't. Do not use bulk "request indexing"; the mass-submission warning stands.
 - **All 940 advertised pages are crawler-reachable from the homepage** within 3 clicks
   (link-graph BFS, 2026-08-20). The plan-of-record's "make the best articles reachable"
   goal is achieved; internal linking needs no further work.
