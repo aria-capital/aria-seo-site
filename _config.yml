@@ -18,3 +18,13 @@ exclude:
   - new_articles_batch3.txt
   - new_articles_buyer_intent.txt
   - tests
+  # Two copies of an RSS feed for "The Midnight Brief", both served live (200) and both
+  # advertising 34 newsletter URLs that all 404 — the newsletter/ directory has never
+  # existed. Nothing on the site links to either, so no crawler has followed them yet,
+  # but they sit at guessable paths and a feed of dead ends is exactly the low-quality
+  # signal this site can least afford while Google has already crawled it and declined.
+  # Excluded rather than deleted: the 17 issues were really written and their full text
+  # survives inside these files, so this is reversible the day the pages are published.
+  # Do not delete them — that is the only copy of that writing.
+  - feed
+  - newsletter-feed.xml

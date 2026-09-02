@@ -17,7 +17,7 @@ that hour again.
 
 **The engineering backlog is essentially closed.** The corpus is clean (1,461 articles,
 zero damaged, empty baseline), both gates are strict and run on push, PR and nightly, and
-298 tests cover it. There is no pile of broken things left to find.
+373 tests cover it. There is no pile of broken things left to find.
 
 **What remains is not engineering, and this is the part worth internalising:**
 
@@ -66,7 +66,7 @@ because there is work left for them.
 **Generators** — `build_seo_index.py`, `build_article_hub.py`, `generate_sitemap.py`.
 These create files from scratch.
 
-**Gates** — `check_article_corpus.py` (CI) and `tests/` (276 tests, pytest).
+**Gates** — `check_article_corpus.py` (CI) and `tests/` (373 tests, pytest).
 
 ## Rules
 
@@ -256,6 +256,44 @@ schema — the schema's "session-scoped" wording is misleading:
    and policy. It is kept in the file anyway because it is harmless, and it is redundant
    while ultracode is on: the ultracode gate short-circuits before the warning check runs.
 
+## The owner's standing order — where the line actually is
+
+From the ARIA vault (`autonomy-and-permissions.md`, 2026-07-27/28). It governs every
+session, including this repo's, and it is *more* permissive than sessions here have been
+acting — and *less* permissive in the one place that matters.
+
+> **Permission is not required to LOOK. Permission is required to CHANGE something outward.**
+>
+> Read, measure, grep, fetch, diff, stage, dry-run, write to memory, write to his documents —
+> **all unattended, no asking, no narrating the intention first.**
+> Push, publish, send, spend, delete, or stop a running service — **never unattended.**
+
+**So stop asking about reversible things.** His words: *"what have I told you about prompts?
+Just run them."* And the failure mode named in the file is the one sessions here keep
+repeating — *"narrating a plan instead of executing it… those are permission prompts wearing
+a question mark. **If the answer would obviously be yes, it was never a question.**"*
+
+**But the outward line is hard, and it is not about convenience.** Claude must never, on any
+surface including computer-use on the Mac: log into an account, type a password or API key,
+publish, delist, send, purchase, or click an irreversible control on his behalf.
+
+**Why — the precedent that settles it.** Blanket account access was offered twice in one night
+and declined twice. The "emergency" driving the second offer was a false credential believed
+to be live on his storefront. Inspection showed **no credential claim at all**; the fix had
+landed three days earlier. With account access, Claude would have **delisted the only product
+that ever made a sale, over a problem that did not exist.** The refusal preserved the listing.
+
+> **Urgency is when verification matters most, not least.** Every crisis that night — the
+> $45.30 dashboard, the "malicious" files that were his own handoff notes, the credential
+> claim — dissolved on inspection.
+
+**What this means for the AdSense work specifically.** Finishing setup means entering a payment
+address, verifying a phone, and connecting a site to a monetization account. That is outward
+and it is his. A session may prepare it — assemble the exact URLs, the order of screens, what
+each one will ask — and then hand him the keyboard. **Do not draft instructions telling another
+Claude surface to do those clicks for him;** that routes around the line rather than respecting
+it. (A cloud session did exactly that on 2026-08-09 before reading this file.)
+
 ## Standing priorities for this project
 
 The owner's goal is a business that earns without putting him at risk. In practice that
@@ -282,6 +320,67 @@ settle it: whether the entity is in good standing, tax treatment, whether the cl
 content is factually correct, and whether the site's overall model is sound. Those need a
 lawyer, an accountant, and a clinician respectively. Say so plainly rather than implying
 that a green test suite is legal safety — it is not.
+
+## Before saying "I can't": run the enumeration
+
+This is a **procedure**, not a principle. The principle was already written below — *"Lead
+with where the capability exists, not with what you cannot do"* — and it was violated again
+anyway, which is the point. A lesson in prose that nothing forces you to execute prevents
+nothing, exactly as `safe_write.py` prevented nothing while it sat unimported.
+
+**Rule: you may not tell the owner something is impossible until you have run all three of
+these in the same session and read the output.**
+
+```
+ListConnectors                    # what his org has installed, and what is live in THIS chat
+ToolSearch "<the capability>"     # deferred tools are NOT in the prompt; they must be searched
+/root/.claude/launcher-settings.json, /root/.claude/settings.json   # what the harness grants
+```
+
+Deferred tools are the trap. Only a fraction of the toolset is listed up front; the rest exist
+but stay invisible until `ToolSearch` surfaces them. "It is not in my tool list" is therefore
+evidence of nothing. Neither is "I checked at the start" — connectors appear mid-session.
+
+**What this cost.** The owner was told for hours that AdSense could only be checked from a
+browser on his Mac. That was stated as a fact about the world; it was a fact about which tools
+happened to be visible. Gmail alone answered it — Google emails applicants about approval,
+rejection, and the rejection *reason*. Thirty seconds of enumeration would have replaced hours
+of well-reasoned explanation about a limitation that was not real.
+
+**Connectors on this account** (verified 2026-08-09 via `ListConnectors`): 29 installed.
+Connected *and* enabled in chat: **Gmail, Google Calendar, Google Drive, Supermetrics,
+Windsor.ai**. Installed but not connected: Stripe, Notion, BigQuery, Tavily, Cloudflare,
+Vercel, Supabase, Sentry, Postman, Docusign and ~14 more — several are one authorization away
+from being useful, so check `installState` before assuming a gap. `enabledInChat: false` with
+`connected: true` means authenticated but toggled off for this chat: a settings toggle for the
+owner, not a dead end. Say which one.
+
+## Cross-session messaging: what does NOT work, and the one thing that does
+
+The owner runs a cloud session and a Cowork/desktop session on his Mac, and wants them to
+exchange state without pasting by hand.
+
+**The obvious mechanism is disabled and no config fixes it.** Verified 2026-08-08 against the
+live API: `create_trigger(persistent_session_id=...)` returns *"binding a trigger to another
+session is not enabled for this organization"*; local sessions are identified by plain UUIDs
+which the trigger API rejects as *"invalid tagged ID format"*; and `list_environments` returns
+exactly one `anthropic_cloud` environment, so there is no self-hosted runner to bridge them.
+
+**Cowork's `create_trigger` does not even expose `persistent_session_id`.** A cloud session
+that hands Cowork an instruction using that parameter is giving it a tool signature it does
+not have. This happened, and the owner ended up relaying by paste — the exact thing the
+instruction was meant to avoid. Read the *other* surface's schema before writing instructions
+for it.
+
+**What does work: GitHub webhooks.** `subscribe_pr_activity(owner, repo, N)` wakes a cloud
+session on PR activity, delivered as `<github-webhook-activity>`. That path is proven — every
+such event in the session that wrote this arrived with no human involved. So a long-lived
+**draft PR whose comments are the messages** is a real bus: the Mac posts a comment, the
+webhook wakes the cloud session within seconds, and the thread is its own audit log.
+
+**Hard limit, and why it is not built: this repo is public, so every bus message is public.**
+Fine for coordination — "settings pushed", "CI red on X". Never for what the Cowork session
+correctly refused to commit: credential locations, bank details, account identifiers.
 
 ## Lessons paid for in mistakes
 
@@ -420,23 +519,90 @@ Start here:
 Sourced from the vault and cross-checked against the repo. **No revenue channel currently
 works.** Fixing the site does not change that; only the owner's account actions do.
 
-- **AdSense is not approved, and may never have been applied for.** `adsense_tracker.json`
-  (07-30) says PENDING with a dashboard URL containing the literal string `pub-PENDING`,
-  while `carlos_actions.json` still lists "Apply to Google AdSense" as an open to-do. The
-  2026-07-22 org rename also means the site must be re-added as a new property. There are
-  zero `<ins class="adsbygoogle">` units in the corpus — only the loader. **No ad can serve.**
-- **Amazon Associates enrolment probably never happened.** `ariacapital-20` is the intended
-  tag and all 72 links carry it, but "Sign up for Amazon Associates" is still open in
-  `carlos_actions.json` (07-30). If unenrolled, every one of those links earns nothing.
+- **AdSense: the account EXISTS and the publisher ID is genuinely the owner's — setup was
+  simply abandoned.** Settled 2026-08-08 by reading the owner's Gmail, the source nobody had
+  checked. Exactly two emails from `adsense-noreply@google.com` exist: *"Te damos la
+  bienvenida a AdSense"* (2026-07-06), whose body reads `Su ID de editor:
+  pub-5576001602612111`, and *"Conecta tu sitio para ganar con AdSense"* (2026-07-08), whose
+  progress bar shows setup stuck at **step 1 of 3** and which states the review begins only
+  *after* the site is connected. Payment address, phone verification and site connection were
+  never completed, so **the review clock never started**. Not approved, not rejected — never
+  reviewed.
+  - This **falsifies two records**: `adsense_tracker.json`'s `pub-PENDING` placeholder, and
+    the vault's 2026-08-01 note that "no AdSense account exists, never applied." Google's own
+    welcome email refutes the latter. Do not reason from either file again.
+  - It retires an old inference too: `pub-5576001602612111` was chosen by git provenance and
+    labelled UNVERIFIED. It is now **VERIFIED** from Google's email, and `ads.txt` at the host
+    root matches exactly.
+  - **Never apply again under a second identity** while an account holding this pub ID
+    exists — that risks duplicate-account enforcement.
+  - There are still zero `<ins class="adsbygoogle">` units — only the loader. Auto ads would
+    serve through the existing loader via an account-side toggle, so this is not a code gap.
+- **Amazon Associates was never enrolled.** Upgraded from "probably" to VERIFIED the same
+  way: zero Associates emails exist in the owner's inbox, ever. All 72 `ariacapital-20` links
+  earn nothing.
+- **Gumroad payouts have been PAUSED since 2026-07-13** — *"Action required: Your payouts are
+  paused,"* identity verification never completed, so the lifetime $14 has never reached the
+  owner's bank. Separately, the four "sales" totalling $46.44 on 2026-07-31 were purchased
+  **from the owner's own email address** and are not revenue.
 - **Zero affiliate programs are approved.** `ARIA_AFFILIATE_LINKS.txt` — the file meant to
   hold real referral URLs — is blank. This is why 8 fabricated `?via=aria` links existed and
   were removed; do not re-add a referral link until a program has actually approved.
 - **Gumroad lifetime revenue is $14.00, one sale**, on a product that shipped broken
   (duplicate PDFs, iOS black-screen), with a refund owed and apparently never issued. Six
   product slugs were deleted 2026-07-15 — any link to them 404s.
-- **Google has not indexed a single article.** `SEO_TRAFFIC_AUDIT.md` (07-24). The
-  mechanical cause (robots/sitemap/canonicals aimed at the dead pre-rename host) is fixed
-  and live, but indexing since then is unmeasured.
+- **Google has CRAWLED this site and DECLINED it. That is not the same problem as never
+  being found, and it has the opposite fix.** Commit `b8476741` (2026-08-05) records a real
+  `site:aria-capital.github.io` measurement: **exactly one page indexed — the homepage — and
+  zero of the 1,461 articles.** So discovery is not the bottleneck; quality assessment is.
+  **This is the single most important diagnostic fact in this file.** Every instinct to "get
+  the site submitted" aims at the wrong problem — you cannot repair a quality verdict by
+  telling a crawler about more URLs, and submitting more of an already-declined corpus argues
+  *against* the site.
+  - A 2026-08-09 spot-check returned nothing at all, not even the homepage. Do not read that
+    as a regression: that search backend is not confirmed to be Google and a Bing `site:`
+    query was CAPTCHA-blocked, whereas `b8476741` used a real Google query. Search Console's
+    Page Indexing report is the only authority, and its exclusion reasons are the work list.
+  - **The delivery side is verified healthy**, so nothing in this repo blocks indexing: the
+    homepage renders, `robots.txt` is `Allow: /` and names the sitemap, and the deployed
+    `sitemap.xml` is byte-identical to the repo's curated file.
+  - **The curated sitemap was cosmetic until 2026-08-09.** Measured: each of the 522
+    live-but-unadvertised articles is linked from **10–43 pages that ARE advertised**.
+    Crawlers follow links, so Google reached all 1,461 and judged the site on its weakest
+    pages regardless of what the sitemap said. `apply_noindex_to_uncurated.py` closes that —
+    518 uncurated articles now carry `<meta name="robots" content="noindex, follow">`, so
+    assessment sees 939 pages instead of 1,461. `follow` is deliberate: links still pass and
+    nothing is orphaned. Free precisely *because* nothing is indexed — the usual cost of
+    noindex is the traffic a page was earning, and that is measurably zero here. Revisit if
+    any of these ever start ranking. Reversal is exact and tested: `--remove`.
+  - Method note: a `WebFetch` summary claimed the deployed sitemap held 1,191 URLs; it holds
+    940. WebFetch answers with a small fast model — **never trust it to count entries in a
+    large document.** Fetch the file and count it.
+
+### There is no headless path to Google. Stop looking for one.
+
+Established 2026-08-09 by an eight-agent sweep that probed live endpoints rather than reading
+docs, so nobody spends another session rediscovering it:
+
+- **Sitemap ping is dead.** `https://www.google.com/ping?sitemap=…` → 404 *"Sitemaps ping is
+  deprecated."* Removed, not merely undocumented.
+- **The Search Console API has no request-indexing method at all** — verified by enumerating
+  its live discovery document.
+- **The Indexing API is policy-restricted** to `JobPosting` and video/broadcast pages.
+- **IndexNow does not include Google.** Its participant list is bing, yandex, seznam, naver,
+  yep, internetarchive, amazonbot.
+- **AdSense cannot be completed by any API.** Payment address, phone verification and site
+  connection have no API surface; the AdSense API is reporting-only and rejects service
+  accounts.
+
+**Do not run IndexNow here.** Three independent adversarial reviews scored it
+negative-expected-value: it submits an already-declined corpus to engines carrying a fraction
+of the traffic, while the site sits on the scaled-content line.
+
+The one genuine headless unlock, if it is ever wanted: a Google Cloud **service account added
+as a delegated owner in Search Console**. After that, sitemap submission and index-status
+reads work from a cloud session forever. The key must travel by chat or Drive and must never
+enter this public repo.
 
 **The plan of record is `plan-30-days-20260728.md`** (Fable, human-reviewed): make the real
 Gumroad products and the best ~700 clinical articles reachable and honest; **build nothing
@@ -563,7 +729,7 @@ Do not re-litigate these; they were measured, not assumed. Each is now held by a
 
 ```bash
 python repo_state.py                             # RUN FIRST — measured state; trust over these notes
-python -m pytest -q                              # 298 tests
+python -m pytest -q                              # 373 tests
 python check_article_corpus.py                   # CI gate: zero damaged HTML, no exceptions
 python check_article_corpus.py --update-baseline # after repairing files; refuses new damage
 python check_site_integrity.py                   # index.html + sitemap.xml; required in CI
