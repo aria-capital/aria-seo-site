@@ -10,6 +10,7 @@ the two can never drift apart. A test pins that, because a drifted copy would si
 de-index advertised pages — the exact opposite of the intent.
 """
 import os
+import sys
 import re
 
 import pytest
@@ -133,3 +134,52 @@ def test_no_advertised_page_carries_noindex():
             continue
         with open(path, encoding="utf-8", errors="replace") as fh:
             assert "noindex" not in fh.read().lower(), f"{slug} is advertised AND noindexed"
+
+
+# --- convergence (review 2026-09-02) ----------------------------------------
+
+
+def _fake_corpus(tmp_path, monkeypatch, curated, uncurated):
+    """A throwaway corpus: pages on disk plus a sitemap naming the curated ones."""
+    for name in curated + uncurated:
+        (tmp_path / name).write_text(PAGE, encoding="utf-8")
+    locs = "".join(f"<url><loc>https://x.example/{n}</loc></url>" for n in curated)
+    (tmp_path / "sitemap.xml").write_text(
+        f'<?xml version="1.0"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">{locs}</urlset>',
+        encoding="utf-8")
+    monkeypatch.setattr(noindex, "HERE", str(tmp_path))
+    monkeypatch.setattr(noindex, "SITEMAP", str(tmp_path / "sitemap.xml"))
+
+
+def test_a_page_promoted_into_the_sitemap_loses_its_tag(tmp_path, monkeypatch):
+    """
+    The hole the first version had: a page that carried the tag while uncurated kept it
+    after promotion, because only uncurated pages were ever visited. Now every run makes
+    every page match the sitemap.
+    """
+    _fake_corpus(tmp_path, monkeypatch, curated=["promoted.html"], uncurated=["still-out.html"])
+    (tmp_path / "promoted.html").write_text(noindex.add_noindex(PAGE), encoding="utf-8")
+    monkeypatch.setattr(sys, "argv", ["apply_noindex_to_uncurated.py"])
+    assert noindex.main() == 0
+    assert noindex.TAG not in (tmp_path / "promoted.html").read_text(encoding="utf-8")
+    assert noindex.TAG in (tmp_path / "still-out.html").read_text(encoding="utf-8")
+
+
+def test_remove_reaches_curated_pages_too(tmp_path, monkeypatch):
+    """`--remove` must be the full reversal it claims, wherever the tag ended up."""
+    _fake_corpus(tmp_path, monkeypatch, curated=["in.html"], uncurated=["out.html"])
+    for n in ("in.html", "out.html"):
+        (tmp_path / n).write_text(noindex.add_noindex(PAGE), encoding="utf-8")
+    monkeypatch.setattr(sys, "argv", ["apply_noindex_to_uncurated.py", "--remove"])
+    assert noindex.main() == 0
+    for n in ("in.html", "out.html"):
+        assert noindex.TAG not in (tmp_path / n).read_text(encoding="utf-8"), n
+
+
+def test_core_pages_are_never_visited_even_by_remove(tmp_path, monkeypatch):
+    """404.html carries its own noindex on purpose; no mode may strip it."""
+    _fake_corpus(tmp_path, monkeypatch, curated=[], uncurated=["a.html"])
+    (tmp_path / "404.html").write_text(noindex.add_noindex(PAGE), encoding="utf-8")
+    monkeypatch.setattr(sys, "argv", ["apply_noindex_to_uncurated.py", "--remove"])
+    assert noindex.main() == 0
+    assert noindex.TAG in (tmp_path / "404.html").read_text(encoding="utf-8")

@@ -145,12 +145,20 @@ def make_fetcher():
             # usable here and the default trust store still applies.
             pass
 
+    # A redirect is an answer, not a detour (review 2026-09-02). urlopen follows redirects
+    # silently, so a site that had moved hosts — every URL a 301 to somewhere else — read as
+    # byte-identical and fully green. The response's final URL is compared to the one asked
+    # for; if they differ the status comes back as "redirected to <final>", which fails the
+    # check that saw it with the honest reason: the deployment is not where the repo says.
     def fetch(url: str):
         last = None
         for attempt in range(len(RETRY_GAPS) + 1):
             try:
                 req = urllib.request.Request(url, headers={"User-Agent": "aria-live-check/1"})
                 with urllib.request.urlopen(req, timeout=TIMEOUT, context=ctx) as r:
+                    final = getattr(r, "url", None) or url
+                    if final != url:
+                        return f"redirected to {final}", r.read()
                     return r.status, r.read()
             except urllib.error.HTTPError as e:
                 if e.code in RETRYABLE and attempt < len(RETRY_GAPS):
@@ -169,19 +177,36 @@ def make_fetcher():
 # --- pure helpers, unit-tested without network ---------------------------------------
 
 def robots_block_for(robots_text: str, project_path: str) -> str | None:
-    """The Disallow rule that would stop crawlers reaching the project, or None.
-    'Disallow: /private/' elsewhere is not one — a substring test would cry wolf on
-    any scoped rule — but a global '/', a prefix of the project path, or a rule inside
-    it all are. Whitespace collapses first: 'Disallow:/' with no space is equally
-    valid and equally fatal."""
+    """The Disallow rule that would stop Google reaching the project, or None.
+
+    Only the groups Google obeys count: `User-agent: *` and `User-agent: Googlebot`. A
+    block aimed at GPTBot or CCBot is a legitimate edit and is ignored (rules before any
+    User-agent line apply to everyone). '/', '/*' and '*' are the whole host; a prefix of
+    the project path is a block; a rule INSIDE the project ('/aria-seo-site/feed') is a
+    scoped rule, not a block — reviewed 2026-09-02, it used to page the owner nightly.
+    Whitespace collapses first: 'Disallow:/' with no space is equally valid."""
+    applies = True      # until the first User-agent line, rules apply to everyone
+    in_header = False   # consecutive User-agent lines form one group header
     for line in robots_text.splitlines():
         flat = "".join(line.split())
-        if not flat.lower().startswith("disallow:"):
+        low = flat.lower()
+        if low.startswith("user-agent:"):
+            agent = low[len("user-agent:"):]
+            mine = agent in ("*", "googlebot")
+            applies = (applies or mine) if in_header else mine
+            in_header = True
             continue
+        if not low.startswith("disallow:"):
+            if flat:
+                in_header = False
+            continue
+        in_header = False
         rule = flat[len("disallow:"):]
         if not rule:
             continue  # empty Disallow means allow-all
-        if rule == "/" or project_path.startswith(rule) or rule.startswith(project_path):
+        if not applies:
+            continue
+        if rule in ("/", "/*", "*") or project_path.startswith(rule.rstrip("*")):
             return line.strip()
     return None
 

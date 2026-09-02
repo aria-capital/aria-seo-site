@@ -17,7 +17,7 @@ that hour again.
 
 **The engineering backlog is essentially closed.** The corpus is clean (1,461 articles,
 zero damaged, empty baseline), both gates are strict and run on push, PR and nightly, and
-373 tests cover it. There is no pile of broken things left to find.
+the pytest suite covers it (count it with `python -m pytest -q --co | tail -1`; a number written here goes stale the next time a test lands). There is no pile of broken things left to find.
 
 **What remains is not engineering, and this is the part worth internalising:**
 
@@ -66,7 +66,7 @@ because there is work left for them.
 **Generators** — `build_seo_index.py`, `build_article_hub.py`, `generate_sitemap.py`.
 These create files from scratch.
 
-**Gates** — `check_article_corpus.py` (CI) and `tests/` (373 tests, pytest).
+**Gates** — `check_article_corpus.py` (CI) and `tests/` (pytest; count it, do not record it).
 
 ## Rules
 
@@ -347,13 +347,11 @@ happened to be visible. Gmail alone answered it — Google emails applicants abo
 rejection, and the rejection *reason*. Thirty seconds of enumeration would have replaced hours
 of well-reasoned explanation about a limitation that was not real.
 
-**Connectors on this account** (verified 2026-08-09 via `ListConnectors`): 29 installed.
-Connected *and* enabled in chat: **Gmail, Google Calendar, Google Drive, Supermetrics,
-Windsor.ai**. Installed but not connected: Stripe, Notion, BigQuery, Tavily, Cloudflare,
-Vercel, Supabase, Sentry, Postman, Docusign and ~14 more — several are one authorization away
-from being useful, so check `installState` before assuming a gap. `enabledInChat: false` with
-`connected: true` means authenticated but toggled off for this chat: a settings toggle for the
-owner, not a dead end. Say which one.
+**Connectors are account state, and this repo is public, so the inventory is not recorded
+here.** Run `ListConnectors` in the session and read `installState` / `connected` /
+`enabledInChat` before assuming a gap. `enabledInChat: false` with `connected: true` means
+authenticated but toggled off for this chat: a settings toggle for the owner, not a dead end.
+Say which one.
 
 ## Cross-session messaging: what does NOT work, and the one thing that does
 
@@ -520,14 +518,11 @@ Sourced from the vault and cross-checked against the repo. **No revenue channel 
 works.** Fixing the site does not change that; only the owner's account actions do.
 
 - **AdSense: the account EXISTS and the publisher ID is genuinely the owner's — setup was
-  simply abandoned.** Settled 2026-08-08 by reading the owner's Gmail, the source nobody had
-  checked. Exactly two emails from `adsense-noreply@google.com` exist: *"Te damos la
-  bienvenida a AdSense"* (2026-07-06), whose body reads `Su ID de editor:
-  pub-5576001602612111`, and *"Conecta tu sitio para ganar con AdSense"* (2026-07-08), whose
-  progress bar shows setup stuck at **step 1 of 3** and which states the review begins only
-  *after* the site is connected. Payment address, phone verification and site connection were
-  never completed, so **the review clock never started**. Not approved, not rejected — never
-  reviewed.
+  simply abandoned.** Settled 2026-08-08 from Google's own welcome email in the owner's Gmail,
+  the source nobody had checked: the account exists, `pub-5576001602612111` is its publisher
+  ID (the same value already public in `ads.txt`), and setup was never completed, so **the
+  review clock never started**. Not approved, not rejected — never reviewed. Which setup
+  steps remain is account state behind the owner's login, not material for a public file.
   - This **falsifies two records**: `adsense_tracker.json`'s `pub-PENDING` placeholder, and
     the vault's 2026-08-01 note that "no AdSense account exists, never applied." Google's own
     welcome email refutes the latter. Do not reason from either file again.
@@ -541,10 +536,9 @@ works.** Fixing the site does not change that; only the owner's account actions 
 - **Amazon Associates was never enrolled.** Upgraded from "probably" to VERIFIED the same
   way: zero Associates emails exist in the owner's inbox, ever. All 72 `ariacapital-20` links
   earn nothing.
-- **Gumroad payouts have been PAUSED since 2026-07-13** — *"Action required: Your payouts are
-  paused,"* identity verification never completed, so the lifetime $14 has never reached the
-  owner's bank. Separately, the four "sales" totalling $46.44 on 2026-07-31 were purchased
-  **from the owner's own email address** and are not revenue.
+- **Gumroad is not a paying channel today** — an account-side status only the owner can
+  change, recorded in the vault rather than here (this file is public). The four 2026-07-31
+  "sales" were test purchases and are not revenue.
 - **Zero affiliate programs are approved.** `ARIA_AFFILIATE_LINKS.txt` — the file meant to
   hold real referral URLs — is blank. This is why 8 fabricated `?via=aria` links existed and
   were removed; do not re-add a referral link until a program has actually approved.
@@ -575,6 +569,13 @@ works.** Fixing the site does not change that; only the owner's account actions 
     nothing is orphaned. Free precisely *because* nothing is indexed — the usual cost of
     noindex is the traffic a page was earning, and that is measurably zero here. Revisit if
     any of these ever start ranking. Reversal is exact and tested: `--remove`.
+
+**After any sitemap rebuild, re-run `python3 apply_noindex_to_uncurated.py`.** It converges:
+pages that left the sitemap gain the tag and pages that entered it lose the tag. Measured
+2026-09-02: the committed `sitemap.xml` and a fresh `build_curated_sitemap.py` run already
+differ by ~30 pages, so a rebuild without this step would advertise pages that still carry
+noindex — `tests/test_apply_noindex.py::test_no_advertised_page_carries_noindex` goes red
+if that ever lands. `--remove` strips the tag from every non-core page, curated or not.
   - Method note: a `WebFetch` summary claimed the deployed sitemap held 1,191 URLs; it holds
     940. WebFetch answers with a small fast model — **never trust it to count entries in a
     large document.** Fetch the file and count it.
@@ -729,7 +730,7 @@ Do not re-litigate these; they were measured, not assumed. Each is now held by a
 
 ```bash
 python repo_state.py                             # RUN FIRST — measured state; trust over these notes
-python -m pytest -q                              # 373 tests
+python -m pytest -q                              # the count is the last line of this output
 python check_article_corpus.py                   # CI gate: zero damaged HTML, no exceptions
 python check_article_corpus.py --update-baseline # after repairing files; refuses new damage
 python check_site_integrity.py                   # index.html + sitemap.xml; required in CI

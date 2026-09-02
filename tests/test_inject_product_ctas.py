@@ -130,7 +130,7 @@ def test_a_career_guide_is_never_offered_on_a_clinical_article():
     for slug in ("chest-tube-management-2026", "abg-interpretation-guide",
                  "vasopressor-titration-icu-nurses-2026", "crrt-troubleshooting-2026"):
         hit = I.match(slug)
-        assert hit is None or hit[0] not in {"https://www.etsy.com/listing/4560718026/crna-application-guide-2027-cycle-icu", "https://www.etsy.com/listing/4560699705/crna-prerequisite-planner-track-icu", "https://www.etsy.com/listing/4559192954/beyond-the-bedside-nurse-career-pivot"}, slug
+        assert hit is None or hit[0] not in SELLABLE, slug  # every sellable product, the worksheet included
 
 
 def test_the_subject_of_the_article_beats_the_word_icu_in_its_name():

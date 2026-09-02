@@ -10,7 +10,7 @@ this site and declined it. That is a different problem from never being found, a
 has the opposite fix — you cannot repair a quality verdict by advertising more URLs.
 
 The curated 940-URL sitemap was built to stop the site presenting as a content farm.
-Measured today, it does not do that. 522 articles are live but not advertised, and each
+Measured today, it does not do that. 518 articles are live but not advertised, and each
 is linked from 10-43 pages that ARE advertised. Crawlers follow links. So Google reaches
 all 1,461 regardless of the sitemap and assesses the site on its weakest pages.
 
@@ -29,9 +29,15 @@ It does not delete, hide, unlink or alter a single word of any article. Every pa
 live, reachable and readable by humans. This changes only what crawlers are invited to
 judge.
 
-SELECTION
+SELECTION — AND CONVERGENCE (review 2026-09-02)
 The curated set is read from sitemap.xml itself, so this can never drift from the sitemap:
 whatever is advertised is exactly what stays indexable. Core/meta pages are never touched.
+
+The first version only ever visited UNCURATED pages, which left two holes: a page later
+promoted into the sitemap kept its noindex forever, and `--remove` could not reach it either,
+so "full reversal" was not full. Every run now visits every non-core article and makes it
+match the sitemap: uncurated pages gain the tag, curated pages lose it. Re-run this after
+any sitemap rebuild. `--remove` strips the tag from every non-core page, curated or not.
 
 USAGE
     python3 apply_noindex_to_uncurated.py --dry-run
@@ -71,12 +77,18 @@ def curated_slugs() -> set[str]:
     return {loc.rstrip("/").split("/")[-1] for loc in locs if loc.endswith(".html")}
 
 
-def targets() -> list[str]:
-    curated = curated_slugs()
+def articles() -> list[str]:
+    """Every non-core article on disk — the set a run visits."""
     return sorted(
         name for name in os.listdir(HERE)
-        if name.endswith(".html") and name not in NEVER_TOUCH and name not in curated
+        if name.endswith(".html") and name not in NEVER_TOUCH
     )
+
+
+def targets() -> list[str]:
+    """The pages that SHOULD carry the tag: on disk, not core, not in the sitemap."""
+    curated = curated_slugs()
+    return [name for name in articles() if name not in curated]
 
 
 def add_noindex(html: str) -> str:
@@ -99,10 +111,10 @@ def remove_noindex(html: str) -> str:
 def main() -> int:
     dry = "--dry-run" in sys.argv
     removing = "--remove" in sys.argv
-    transform = remove_noindex if removing else add_noindex
 
-    names = targets()
-    changed = skipped = refused = 0
+    curated = curated_slugs()
+    names = articles()
+    added = removed = skipped = refused = 0
     problems: list[str] = []
 
     for name in names:
@@ -115,7 +127,8 @@ def main() -> int:
             refused += 1
             continue
 
-        after = transform(before)
+        want_tag = (name not in curated) and not removing
+        after = add_noindex(before) if want_tag else remove_noindex(before)
         if after == before:
             skipped += 1
             continue
@@ -128,13 +141,15 @@ def main() -> int:
                 problems.append(f"{name}: {exc}")
                 refused += 1
                 continue
-        changed += 1
+        if want_tag:
+            added += 1
+        else:
+            removed += 1
 
-    verb = "would remove from" if (dry and removing) else \
-           "would add to" if dry else \
-           "removed from" if removing else "added to"
-    print(f"  uncurated articles      : {len(names)}")
-    print(f"  {verb:<22}: {changed}")
+    would = "would " if dry else ""
+    print(f"  articles visited        : {len(names)}  (curated {len(names) - len(targets())}, uncurated {len(targets())})")
+    print(f"  {would + 'add to':<22}: {added}")
+    print(f"  {would + 'remove from':<22}: {removed}")
     print(f"  already correct         : {skipped}")
     print(f"  refused/skipped         : {refused}")
     for p in problems[:10]:

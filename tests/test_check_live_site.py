@@ -87,8 +87,28 @@ def test_global_disallow_is_caught_despite_whitespace_case_and_no_space():
 
 def test_disallow_covering_the_project_prefix_is_a_block():
     assert robots_block_for("Disallow: /aria-\n", "/aria-seo-site/")
-    assert robots_block_for("Disallow: /aria-seo-site/some-page.html\n", "/aria-seo-site/")
     assert robots_block_for("Disallow:\n", "/aria-seo-site/") is None  # empty = allow-all
+
+
+def test_a_rule_inside_the_project_is_scoped_not_a_block():
+    # Review 2026-09-02: `Disallow: /aria-seo-site/feed` hides one dead path, not the site.
+    # Treating it as a block would page the owner nightly for a legitimate edit.
+    assert robots_block_for("User-agent: *\nDisallow: /aria-seo-site/some-page.html\n", "/aria-seo-site/") is None
+
+
+def test_wildcard_disallow_is_the_whole_host():
+    # Google reads `Disallow: /*` and `Disallow: *` as `Disallow: /`.
+    assert robots_block_for("User-agent: *\nDisallow: /*\n", "/aria-seo-site/")
+    assert robots_block_for("User-agent: *\nDisallow: *\n", "/aria-seo-site/")
+
+
+def test_a_block_aimed_at_another_crawler_does_not_count():
+    # A GPTBot/CCBot block is a common, legitimate edit and does not touch Googlebot.
+    text = "User-agent: GPTBot\nDisallow: /\n\nUser-agent: *\nAllow: /\n"
+    assert robots_block_for(text, "/aria-seo-site/") is None
+    # ...but the same rule in the group every crawler obeys, or in Googlebot's own, does.
+    assert robots_block_for("User-agent: GPTBot\nUser-agent: *\nDisallow: /\n", "/aria-seo-site/")
+    assert robots_block_for("User-agent: Googlebot\nDisallow: /aria-\n", "/aria-seo-site/")
 
 
 def test_smuggled_sitemap_is_named_but_foreign_sitemaps_are_not_ours():
@@ -168,7 +188,7 @@ def test_stale_homepage_fails():
     site, sitemap, committed = make_site()
     site[BASE] = (200, f"<html><head>{TAGS}</head><body>old home</body></html>".encode())
     r = run(site, sitemap, committed)["homepage serves complete and matches the committed index.html"]
-    assert not r["ok"] and "stale" in r["detail"] or "differ" in r["detail"]
+    assert not r["ok"] and ("stale" in r["detail"] or "differ" in r["detail"])
 
 
 def test_inert_tags_fail_the_functional_check():
@@ -197,10 +217,10 @@ def test_no_local_sitemap_green_says_what_was_not_compared():
 def test_foreign_host_in_sitemap_fails():
     site, sitemap, committed = make_site()
     bad = sitemap.replace(b"<loc>" + BASE.encode(),
-                          b"<loc>https://carlostrujilloglz1991.github.io/", 1)
+                          b"<loc>https://example-old-host.github.io/", 1)
     site[BASE + "sitemap.xml"] = (200, bad)
     r = run(site)["live sitemap matches committed curation"]
-    assert not r["ok"] and "carlostrujilloglz1991" in r["detail"]
+    assert not r["ok"] and "example-old-host" in r["detail"]
 
 
 def test_root_robots_blocking_the_project_fails():
@@ -380,3 +400,26 @@ def test_unreadable_ca_bundle_candidate_is_skipped_not_fatal(monkeypatch):
     monkeypatch.setattr(check_live_site, "Path", DeniedPath)
     calls = _urlopen_sequence(monkeypatch, [(200, b"fine")])
     assert make_fetcher()("https://x/") == (200, b"fine") and len(calls) == 1
+
+
+def test_a_redirect_is_reported_not_followed(monkeypatch):
+    # Review 2026-09-02: urlopen follows redirects silently, so a site whose every URL had
+    # become a 301 to another host read as byte-identical and fully green. The fetcher now
+    # compares the response's final URL with the one it asked for.
+    class R:
+        status = 200
+        url = "https://elsewhere.example/aria-seo-site/"
+
+        def read(self):
+            return b"<html></html>"
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *a):
+            return False
+
+    monkeypatch.setattr(check_live_site.urllib.request, "urlopen",
+                        lambda req, timeout=None, context=None: R())
+    status, _ = check_live_site.make_fetcher()(BASE)
+    assert status != 200 and "redirected to" in str(status) and "elsewhere.example" in str(status)
