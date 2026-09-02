@@ -35,6 +35,29 @@ from safe_write import safe_write_html
 STORE = "https://icunotebook.gumroad.com"  # retained only for the legacy/held-block matchers
 SENTINEL = "aria-product-cta"
 
+# REPORT-SHEET DESTINATIONS, read from the shop's own RSS feed 2026-09-02 (the same
+# credential-free instrument named above; the /listing/ URL still 403s for real and invented
+# ids alike). Seven listings went live in the days before that read and NOT ONE article linked
+# to any of them — the identical defect found on 08-28 for the Comparison Worksheet, recurred
+# at seven times the scale. The site sold three of the shop's ten products and did not know
+# the other seven existed.
+#
+# These are blank forms. That distinction is the whole reason they may go where the ICU
+# Reference Set may not: the 2026-08-19 hold is about wrong DOSES PRINTED IN A PRODUCT
+# (atropine 0.5 mg where the algorithm says 1 mg; an epinephrine line whose two options differ
+# tenfold). A sheet with ruled boxes prints no dose, no protocol and no reference value, so the
+# hold's reasoning does not reach it. `vrseeu` itself remains permanently barred — see
+# test_the_held_product_cannot_be_reached_from_the_rules_table, which is untouched.
+SHEET_DESTS = frozenset({
+    "https://www.etsy.com/listing/4567558734/icu-nurse-report-sheet-critical-care",
+    "https://www.etsy.com/listing/4567544361/er-nurse-report-sheet-emergency",
+    "https://www.etsy.com/listing/4567566458/cna-report-sheet-nurse-aide-brain-sheet",
+    "https://www.etsy.com/listing/4567561046/nursing-student-clinical-paperwork",
+    "https://www.etsy.com/listing/4567531245/med-surg-nurse-report-sheet-nursing",
+    "https://www.etsy.com/listing/4567539159/sbar-nurse-report-sheet-sbar-handoff",
+    "https://www.etsy.com/listing/4567527501/nurse-report-sheet-bundle-nursing-brain",
+})
+
 # Ordered, most specific first — first match wins.
 # (regex over the filename slug, permalink, product name, one honest line)
 #
@@ -131,6 +154,50 @@ RULES = [
     # DO NOT restore this rule on the strength of a model re-reading the file. The hold's own
     # bar is a named clinician with current credentials signing off, or a product that
     # carries no doses. Neither has happened. Restoring it re-links 546 pages in one run.
+    #
+    # ---- REPORT SHEETS, ADDED 2026-09-02 -------------------------------------------------
+    # Appended, never interleaved. First-match-wins means rules added at the END cannot change
+    # where any already-matching article points, so the 402 pages wired to the CRNA and career
+    # products are provably untouched by this block. Only articles that matched NOTHING can
+    # move, and 1,060 of 1,462 articles matched nothing.
+    #
+    # Ordered SETTING first, then role, then a general fallback. The setting is what decides
+    # which sheet a nurse would actually use, so `new-grad-icu-nurse-tips` should get the ICU
+    # layout rather than the generic new-grad one — which is why the ICU rule sits above the
+    # new-grad rule and not below it.
+    (r"\bcna\b|nurse-aide|nursing-assistant|\bpct\b|patient-care-tech",
+     "https://www.etsy.com/listing/4567566458/cna-report-sheet-nurse-aide-brain-sheet",
+     "CNA Report Sheet",
+     "A six patient assignment layout with a daily care and turn log, for aides and techs."),
+    (r"er-nurse|emergency-department|emergency-room|emergency-nurs|\bed-nurse|trauma-nurse|triage",
+     "https://www.etsy.com/listing/4567544361/er-nurse-report-sheet-emergency",
+     "ER Nurse Report Sheet",
+     "A four bed triage layout for an emergency department shift, on one printable sheet."),
+    (r"nursing-student|nursing-school|student-nurse|clinical-rotation|clinicals\b|preceptor|nclex",
+     "https://www.etsy.com/listing/4567561046/nursing-student-clinical-paperwork",
+     "Nursing Student Clinical Paperwork",
+     "A clinical day worksheet with medication and brain sheet sections for school rotations."),
+    (r"med-surg|medsurg|telemetry|floor-nurse|step-down|stepdown|progressive-care",
+     "https://www.etsy.com/listing/4567531245/med-surg-nurse-report-sheet-nursing",
+     "Med Surg Nurse Report Sheet",
+     "Four, five and six patient layouts for a med-surg or telemetry assignment, on one sheet."),
+    # The 445-article rule. These are the clinical ICU pages that carried the held ICU Reference
+    # Set until 2026-08-23 and have offered nothing since. What they get now is a blank form.
+    (r"icu-nurse|icu-nurses|critical-care|\bicu\b|ventilat|vasopressor|sedation|hemodynamic|"
+     r"\bcrrt\b|\babg\b|drip-titration|swan-ganz|arterial-line",
+     "https://www.etsy.com/listing/4567558734/icu-nurse-report-sheet-critical-care",
+     "ICU Nurse Report Sheet",
+     "One and two patient layouts with room for drips, lines and a handoff column."),
+    (r"new-grad|newly-licensed|first-year-nurse|sbar|hand-?off|shift-report|report-sheet|"
+     r"brain-sheet|change-of-shift",
+     "https://www.etsy.com/listing/4567539159/sbar-nurse-report-sheet-sbar-handoff",
+     "SBAR Nurse Report Sheet",
+     "An SBAR-shaped handoff layout for change of shift report, on one printable sheet."),
+    (r"night-shift|12-hour-shift|nurse-charting|nursing-documentation|time-management|"
+     r"prioriti|delegation",
+     "https://www.etsy.com/listing/4567527501/nurse-report-sheet-bundle-nursing-brain",
+     "Nurse Report Sheet Bundle",
+     "The report sheets together &mdash; ICU, med-surg and SBAR layouts, one to six patients."),
 ]
 
 # LEGACY BLOCK, removed 2026-08-07. Before this machinery existed, a different CTA was
@@ -169,6 +236,27 @@ HELD_RE = re.compile(
 # it tells a CRNA applicant we were not reading our own page. Match the disclaimer to the
 # product's actual risk — here, admissions guidance that can go stale — and say the one useful
 # thing instead: program requirements vary, check them at the source.
+# TWO DISCLAIMERS, 2026-09-02. Until today every product in this table was a CAREER guide and
+# one closing note fitted all of them. The report sheets added below are a different kind of
+# object with a different risk, so they get their own note — by the same rule the 08-07 entry
+# above states: match the disclaimer to the product's actual risk, or it reads as not having
+# read your own page.
+#
+# A report sheet's real risk is not admissions timing and it is not drug doses (it prints
+# neither). It is that a nurse writes patient details onto it. So the sheet note names the
+# employer's documentation, handoff and privacy policy, which is the thing that actually
+# governs a filled-in brain sheet.
+NOTE_GUIDE = (
+    "Study material for nurses. Created with AI assistance. Not medical advice, and not "
+    "admissions, career or financial advice. Program requirements and deadlines vary &mdash; "
+    "verify them with each program directly."
+)
+NOTE_SHEET = (
+    "Printable stationery for nurses. Created with AI assistance. Not medical advice. It is a "
+    "blank form &mdash; follow your employer's own documentation, handoff and patient-privacy "
+    "policy for anything you write on it."
+)
+
 BLOCK = """<!-- {sentinel} -->
 <aside style="border:1px solid #d7e3f4;border-left:4px solid #0057b8;background:#f7fafd;border-radius:6px;padding:18px 20px;margin:28px 0;">
   <p style="margin:0 0 6px;font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:#5b7a9d;">From The ICU Notebook</p>
@@ -176,14 +264,25 @@ BLOCK = """<!-- {sentinel} -->
   <p style="margin:0 0 12px;font-size:14px;line-height:1.5;color:#41576e;">{line}</p>
   <a href="{url}" target="_blank" rel="noopener"
      style="display:inline-block;padding:9px 16px;background:#0057b8;color:#fff;text-decoration:none;border-radius:5px;font-size:14px;font-weight:600;">See what's on it &rarr;</a>
-  <p style="margin:12px 0 0;font-size:12px;line-height:1.5;color:#6b7f94;">Study material for nurses. Created with AI assistance. Not medical advice, and not admissions, career or financial advice. Program requirements and deadlines vary &mdash; verify them with each program directly.</p>
+  <p style="margin:12px 0 0;font-size:12px;line-height:1.5;color:#6b7f94;">{note}</p>
 </aside>
 <!-- /{sentinel} -->
 """
 
 
+def note_for(url):
+    """Pick the closing note from the destination, not from the caller.
+
+    Keyed on the destination rather than passed in as a fifth tuple field so that a rule row
+    cannot end up carrying the wrong note: SHEET_DESTS is the single list of report-sheet
+    destinations, and a test asserts it matches the rules table exactly, so the two cannot
+    drift apart the way a hand-set flag would.
+    """
+    return NOTE_SHEET if url in SHEET_DESTS else NOTE_GUIDE
+
+
 def build(url, name, line):
-    return BLOCK.format(sentinel=SENTINEL, name=name, line=line, url=url)
+    return BLOCK.format(sentinel=SENTINEL, name=name, line=line, url=url, note=note_for(url))
 
 
 def match(slug):
