@@ -337,6 +337,44 @@ ToolSearch "<the capability>"     # deferred tools are NOT in the prompt; they m
 /root/.claude/launcher-settings.json, /root/.claude/settings.json   # what the harness grants
 ```
 
+**Run `ls /home/user/` FIRST, before any of the three above.** All three measure *remote*
+capability, and on 2026-09-02 a session passed all three and was still wrong four times in one
+afternoon — it told the owner his Mac, Google Drive, the ARIA vault and a closed Etsy task were
+all out of reach. The vault was **cloned on local disk the whole session**, at
+`/home/user/aria-brain`. The thing being searched for was nearer than every place searched.
+
+Two mechanics make this trap reliable, so treat it as structural rather than as one session
+being careless:
+
+- **The system prompt's Repository Scope list is a boot snapshot, not a disk inventory.** It
+  named only `aria-seo-site` while `aria-capital/ARIA-Brain` was attached and unlisted. Attached
+  repos are never announced; `add_repo` on one already present just returns `already_present`
+  with its path. The only way to know is to look.
+- **The ARIA vault is a private GitHub repo and this org's sessions can read it.** That is the
+  single highest-value thing a session here can reach, and no session knew it until now:
+  `HANDOFF.md`, `STATUS.md`, `memory/` (~600 records) and `WORKFLOW.md` answer most questions
+  this file only gestures at. A shallow clone can sit an hour behind the vault's hourly sync —
+  check with `git -C /home/user/aria-brain log -1` and refresh with
+  `git fetch --depth=1 origin main`. `memory/INDEX.md` is regenerated nightly and must never be
+  hand-edited. **The vault's own operating procedure is its `WORKFLOW.md`** — read that rather
+  than inferring a workflow, and note that its close step (`aria handoff`) and its hygiene step
+  (`aria doctor`) both live in `bin/`, which the sync excludes, so a cloud session has neither.
+  Write the handoff entry by hand in the existing format instead.
+  - Cautionary tale from the session that added this bullet: it found a `vault-guard.py` in the
+    working tree, read its docstring, and wrote "run it before pushing, exactly as
+    `check_article_corpus.py` is run here" into this file. That instruction was invented. The
+    script is not in the git remote, is referenced by no note in the vault, and appears nowhere
+    in `WORKFLOW.md`. It may be live and simply uncommitted, or abandoned — the Mac can tell in
+    a second and a cloud session cannot. **A docstring describes what a file does, never whether
+    anything runs it.** Check the call path before promoting a file to a procedure.
+
+**Read `HANDOFF.md` in that vault before reporting any ARIA state as current.** Several peer
+sessions land work in it on the same day. On 2026-09-02 a session offered the owner paste-ready
+text for an Etsy task another session had finished eight hours earlier — and the handoff entry
+recording that closure also warned, in plain words, that the shop RSS is CDN-stale, which was the
+very instrument the session used to "confirm" the task was still open. `HANDOFF.md` is state; the
+Drive bus is a queue artifact and lags.
+
 Deferred tools are the trap. Only a fraction of the toolset is listed up front; the rest exist
 but stay invisible until `ToolSearch` surfaces them. "It is not in my tool list" is therefore
 evidence of nothing. Neither is "I checked at the start" — connectors appear mid-session.
@@ -353,10 +391,100 @@ here.** Run `ListConnectors` in the session and read `installState` / `connected
 authenticated but toggled off for this chat: a settings toggle for the owner, not a dead end.
 Say which one.
 
+## Claude Code runs ON the Mac. Check that before concluding you cannot reach it.
+
+**The CLI is installed on the owner's Mac and works.** Proven 2026-09-02, not assumed: he ran
+`claude rc` there and it answered with a Claude Code error message, which a missing binary
+cannot do. This file already carried the *recommendation* ("install Claude Code on the Mac, it
+drives Chrome there") down in the lessons — and a session read that as advice not yet taken.
+It was taken. The `aria-session` skill holds the machine name, the vault path and the boot
+procedure; it is the source of truth for all three and they are deliberately not duplicated
+here, because this repo is public.
+
+**What that changes:** "a cloud container cannot reach your Mac" is true about *this* process
+and false about the fleet. There is a Claude on that Mac with direct access to the vault,
+`~/Library` and launchd — none of which any cloud session can touch. Route work there instead
+of explaining the limitation. That is the same failure this file already records costing hours
+over AdSense, and it was repeated on 2026-09-02 by a session that had read the warning.
+
+**The bridge from phone or cloud to that Mac is `claude rc`** (Remote Control), run from a
+terminal *in the folder you want it to work in* — the folder is the whole decision, because
+Claude Code only loads a `CLAUDE.md` from the directory it starts in. Started from `~`, a
+session knows nothing.
+
+**But `claude rc` is NOT how the owner gets his vault on his phone — git is, and it was already
+built.** A session spent an afternoon walking him toward Remote Control as the Obsidian answer
+while the Mac had settled it hours earlier by a different route entirely. Do not repeat that:
+Remote Control is for driving the Mac, not for reaching the vault.
+
+**Read `ARIA_BUS` in Drive BEFORE planning anything that touches the Mac.** That folder is the
+live bus between machines, and it is where the answer already was. Its conventions, learned the
+expensive way: `RUN-ME-*.md` is work a cloud session is handing to the Mac (written blind —
+nothing in one has run); `DONE-*.md` is the Mac reporting back what it actually did, measured;
+`ARIA-OPEN-ASK.md` is the one open human task; `ARIA-CLOUD-MAP.md` + its `.stamp` is the vault
+export. A session that greps the older vault folders, finds July files, and concludes the whole
+of Drive is stale will miss all of it — that happened on 2026-09-02, in the same session that
+had just written the warning about generalising from one folder.
+
+**It requires the CLI to be signed in** — `claude auth login`, a real shell subcommand, under
+the *same* claude.ai account as the session that wants to see the device. Signed out, `rc`
+fails with "You must be logged in to use Remote Control," and the error text points at
+`/login`, which only exists *inside* a session and is "command not found" at the shell prompt.
+A different account fails silently: the Mac simply never appears in the device list.
+
+**That sign-in is the owner's to type, every time.** It is an account login, which the standing
+order above puts permanently out of bounds on any surface. Assemble the commands, hand him the
+keyboard, and do not treat it as a capability gap to route around.
+
+### Measured 2026-09-02 — re-measure rather than trusting these
+
+- **The `File system` connector was `needs_reconnect`, `connected: false`.** That is the
+  folder-access bridge the `aria-session` skill's mount path depends on. Broken, it is *why* a
+  cloud session finds no mount and reports no path to the Mac — and from the inside, a
+  disconnected connector is indistinguishable from a capability that never existed. Read its
+  state before believing either story.
+- **`list_environments` returned only `anthropic_cloud` environments.** `create_session` still
+  cannot spawn anything that runs on the Mac; the 2026-08-08 finding below stands.
+- **Drive holds BOTH a live export and a dead snapshot. Check the timestamp, never the
+  folder.** Sampling the `AI Context` folder found everything weeks stale, and a session
+  generalised that to "Drive is a snapshot, not a mirror" — wrong, and caught the same hour it
+  was written. `ARIA-CLOUD-MAP.md` is a rendered export from the Mac that lands with a
+  `.stamp` sidecar carrying `rendered-at-utc`, a sha256 prefix, a byte and record count, a
+  `withheld:` line naming anything deliberately omitted, and `verified: cmp-ok`. On 2026-09-02
+  it was rendered ~30 minutes before the session read it. That is a real Mac→cloud bridge that
+  already works, unattended, and it is the first thing a cloud session should reach for.
+  Read the `.stamp` before trusting the map — it is cheap, and it is the difference between
+  current state and a photograph. Stale elsewhere in Drive says nothing about it.
+- **The MCP-vs-filesystem argument about Obsidian is MOOT — the Mac chose git.** Two older
+  sources contradict each other on whether the Obsidian MCP servers work (a 2026-07-27 vault
+  note says both were built and tested live with the Local REST API plugin installed on two
+  vaults; the `aria-session` skill, 2026-08-19 and marked "do not re-test," says both are dead
+  and the plugin is absent). Do not spend a session adjudicating that. On 2026-09-02 the Mac
+  made the whole question irrelevant: the vault is a private git repo that syncs hourly, and
+  the phone reads it through the Obsidian Git community plugin. No MCP server, no REST plugin,
+  no mount — and it works while Obsidian is closed. Verified independently from the cloud, not
+  taken on the note's word: the private repo exists and its `pushed_at` was seconds behind the
+  Drive export's render time, so the wire was live at the moment of checking.
+  - The sync deliberately excludes `state/`, `staging/`, `scratchpad/`, `tmp*`, `bin/` (those
+    scripts name credential paths), `.claude/`, and `*.bak-*`, and it scans every carried file
+    for credential VALUE shapes, withholding hits by name in `WITHHELD.md`. **So the GitHub
+    copy is not the vault** — anything under an excluded path exists only on the Mac. A session
+    reading the repo and concluding a file is missing is reading an intentional hole.
+  - Note also that "three vaults are registered" remains true, so "the Obsidian vault" is still
+    ambiguous in older prose. `ARIA-Brain` is the one with the git remote; that is the one that
+    matters now.
+
 ## Cross-session messaging: what does NOT work, and the one thing that does
 
 The owner runs a cloud session and a Cowork/desktop session on his Mac, and wants them to
 exchange state without pasting by hand.
+
+**Remote Control may be a second bus, and is UNTESTED as of 2026-09-02.** `ListAgents` in a
+cloud session documents itself as listing "Remote Control sessions on other machines" once RC
+is connected here, addressable by name through `SendMessage`. If that holds it beats the PR bus
+outright — direct, private, and not published to a public repo. Nobody has confirmed it,
+because the Mac has never been signed in and connected. Test it the first time `claude rc` is
+live; until then it is a tool description, which is not evidence.
 
 **The obvious mechanism is disabled and no config fixes it.** Verified 2026-08-08 against the
 live API: `create_trigger(persistent_session_id=...)` returns *"binding a trigger to another
@@ -399,6 +527,12 @@ correct first answer was one line: *install Claude Code on the Mac, it drives Ch
 That took under ten minutes once actually attempted. Hours went into explaining a limitation
 instead of routing around it. When someone asks for something you cannot do, spend the effort
 finding the surface where it IS possible before spending any on the explanation.
+
+  **That install happened — it is not still a suggestion.** See "Claude Code runs ON the Mac"
+  above. Written as advice, this paragraph read to a later session as advice *not yet acted
+  on*, and that session told the owner it had no path to his Mac while a working Claude Code
+  sat on it. A lesson phrased as a recommendation ages into a to-do; record the outcome next
+  to the recommendation or it will be re-bought.
 
 **Setup facts learned the same way, so nobody re-derives them:**
 - The install script is at `claude.ai/install.sh`, not `claude.com/install.sh` — the latter 404s.
