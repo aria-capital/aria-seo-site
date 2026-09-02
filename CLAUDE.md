@@ -738,28 +738,25 @@ Do not re-litigate these; they were measured, not assumed. Each is now held by a
 
 ## Known issues
 
-- **CLINICAL — the atropine error that pulled a product is ALSO live in the articles, and
-  nobody had swept for it.** The 2026-08-19 clinical hold pulled `vrseeu` partly because its
-  ACLS card printed bradycardia atropine as **0.5 mg**, which has been **1 mg** since the 2020
-  algorithm. Measured 2026-09-02: the same outdated dose is in **5 live articles**, three of
-  them advertised to Google —
-  `acls-bls-nurse-certification-guide-2026`, `cardiac-arrhythmia-nursing-guide-2026`,
-  `cardiac-dysrhythmia-nursing-guide-2026` (all advertised), plus
-  `code-blue-nursing-guide-2026` and `telemetry-nursing-guide-2026` (noindexed).
-  A sixth page states 1 mg correctly, so the corpus is inconsistent, not uniformly wrong.
-  All five carry the disclaimer — which is exactly why the disclaimer is a floor and not a
-  solution.
-  - **Not repaired here, deliberately.** Editing clinical dosing is the one thing these notes
-    put outside automated scope: it needs a clinician, and the owner is one. Standing priority
-    5 (prefer removing a false statement over adding a qualifying one) makes deleting the
-    figure the safer default if a correction is not signed off.
-  - **The generalizable lesson: a defect found in one artifact was never searched for in the
-    others.** The product was held, the articles that share its generator were not checked for
-    eight weeks. When a content defect is found anywhere, grep the whole corpus for it the
-    same day.
-  - Reproduce: search the corpus for `atropine` within ~250 chars of a `mg` figure and a
-    bradycardia/ACLS context word. Do not trust a bare `0.5 mg` match — 0.5 mg is correct for
-    other atropine indications; the context is what makes it wrong.
+- **CLINICAL — CORRECTED 2026-09-02, and the lesson is the part to keep.** The 2026-08-19
+  clinical hold pulled `vrseeu` partly because its ACLS card printed bradycardia atropine as
+  **0.5 mg**; the 2020 algorithm first dose is **1 mg**. The product was held and **the
+  articles that share its generator were never searched**. Eight weeks later the same figure
+  was still live in 5 articles (7 instances), three of them advertised to Google.
+  `fix_atropine_dose.py` corrected all 7; `tests/test_fix_atropine_dose.py` keeps a
+  corpus-wide guard so it cannot come back, and the owner (an RN) should still eyeball the
+  five pages.
+  - **The generalizable lesson, which is why this entry stays after the fix: a defect found
+    in one artifact was never searched for in its siblings.** When a content defect is found
+    anywhere, grep the whole corpus for it the same day.
+  - Method, if a similar sweep is ever needed: match `atropine` within ~60 chars of the dose
+    (bounded, so it cannot leap across table rows to another drug's figure) AND require a
+    bradycardia/ACLS context word nearby. A bare `0.5 mg` match is not enough — 0.5 mg is
+    correct for other atropine indications, and one page's *"paradoxical bradycardia possible
+    with doses below 0.5mg"* is correct content that must survive the edit.
+  - **The exposure this sampled is not closed.** ~120 pages carry ~1,187 explicit dose
+    expressions, none clinically reviewed. This fix corrected the one error already proven by
+    the product hold; it says nothing about the other 1,180.
 
 - **`seo_index_sync.py` would add 852 orphan cards** to `index.html` on its next run.
   Whether those articles should be linked from the homepage at all is a curation decision
