@@ -761,21 +761,47 @@ Do not re-litigate these; they were measured, not assumed. Each is now held by a
     wrong dose was still live. **A checker that shares its blind spot with the thing it checks
     cannot see its own miss** — the bound is now 120 (chosen by sweeping 60→200 over the whole
     corpus: exactly one more match, no false positives) and both layouts are pinned by tests.
-  - **OPEN, UNVERIFIED — amiodarone in the same file.** A dose audit flagged
-    `cardiac-dysrhythmia-nursing-guide-2026`'s drug table for printing *"150 mg over 10 min
-    for pulseless VT/VF; 150 mg over 10 min for stable VT"*. In cardiac arrest ACLS gives
-    amiodarone **300 mg IV/IO push** as the first dose (150 mg for the second); "150 mg over
-    10 minutes" is the *stable VT* regimen, which the same row then states correctly — so the
-    row appears to apply the perfusing-rhythm regimen to the arrest indication. **Not
-    changed.** Unlike the atropine figure this was never adversarially verified (the audit's
-    verifier agents all died on a session limit), and the edit would change route and rate
-    rather than a single number. It needs the owner's sign-off as an RN.
-  - **The exposure this sampled is not closed.** ~120 pages carry ~1,187 explicit dose
-    expressions, none clinically reviewed. The audit that found the amiodarone item covered
-    only 1 of 7 planned drug classes before the session limit stopped it — the other six
-    (vasoactive, sedation, paralytics/reversal, anticoagulation/cardiac, electrolytes,
-    endocrine/renal) were never examined. **Do not read the audit's "0 confirmed" as "clean";
-    it means verification never ran.**
+  - **CORRECTED 2026-09-07 — amiodarone arrest dose in the same file.** The drug table printed
+    *"150 mg over 10 min for pulseless VT/VF; 150 mg over 10 min for stable VT"*. "150 mg over
+    10 minutes" is the *stable VT* regimen; in arrest the 2020 algorithm gives **300 mg IV/IO
+    push** first (150 mg second), and a 10-minute infusion cannot be delivered during CPR at
+    all. Verified 3/3 by independent skeptics instructed to refute it and to default to
+    refuted when uncertain. Their decisive argument was corpus-internal: **the site states the
+    arrest dose correctly on three other pages** — `acls-bls-nurse-certification-guide-2026`
+    uses the identical two-clause structure, plus `code-blue-nursing-guide-2026` and
+    `amiodarone-guide-icu-nurses-2026` — while `300 mg` appeared **zero** times in the
+    offending file. It was the lone outlier, so the repair propagates the publisher's own
+    wording rather than inventing any. `fix_arrest_amiodarone_dose.py`, guarded by
+    `tests/test_fix_arrest_amiodarone_dose.py`. The stable-VT clause in the same cell is
+    correct and was deliberately left untouched.
+
+- **CLINICAL — OPEN, two verified IV potassium errors that need the owner.** Both survived
+  3/3 adversarial verification; both are on **advertised** pages. **Not changed**, because
+  the correct value is a range that varies by institutional protocol — picking the
+  replacement number is clinical judgement, not propagation of a published constant.
+  - `diabetic-ketoacidosis-nursing-guide-2026`: *"Replace K+ first (40 mEq/hr max
+    peripherally; >10 mEq/hr central)"*. The sentence contradicts itself — it caps a
+    **peripheral** line at four times the rate it simultaneously names as **central**
+    territory. The figures look transposed. Usual peripheral ceiling is ~10 mEq/hr (up to ~20,
+    protocol-dependent), above which central access and continuous ECG are required.
+  - `fluid-electrolytes-nursing-guide-2026`: *"max concentration 40 mEq/100 mL peripheral.
+    Central line required for … concentrations above 40 mEq/100 mL"* — again self-cancelling,
+    naming one figure as both the peripheral maximum and the central threshold.
+    40 mEq/100 mL is 400 mEq/L, a central-line concentration.
+  - Why these deserve the owner's minutes: rapid or concentrated IV potassium is a classic
+    fatal medication error, and both pages read as safety boxes — precisely where a nurse
+    looks for the number that decides whether a central line is needed.
+
+  - **The exposure is now sampled, not closed.** ~120 pages carry ~1,187 explicit dose
+    expressions, none clinically reviewed. A 7-class audit of 251 high-alert drug/dose pairs
+    (2026-09-07, 19 agents, adversarial verification on every candidate) produced **3
+    confirmed errors, all high-severity**: the amiodarone item above and the two potassium
+    items. Five classes — vasoactive, sedation, paralytics/reversal, anticoagulation/cardiac,
+    endocrine/renal — returned nothing, which is a real negative result but covers only the
+    drug/dose pairs the extractor matched. It is not a clean bill for all 1,187 figures. A
+    verifier also flagged `amiodarone-vs-lidocaine-icu-nurses-2026` and
+    `wide-complex-tachycardia-vt-icu-nurses-2026` as mentioning arrest dosing without being
+    reached by this pass.
 
 - **`seo_index_sync.py` would add 852 orphan cards** to `index.html` on its next run.
   Whether those articles should be linked from the homepage at all is a curation decision
