@@ -1,0 +1,192 @@
+# Obsidian integration — measured facts
+
+Primary-source research, 2026-09-07. Everything here was fetched from Obsidian's own
+documentation (`obsidian.md/roadmap`, `obsidian.md/changelog`, `obsidian.md/help/*`,
+`obsidian.md/pricing`), not from blogs. Where a claim came from a third party it is
+labelled as such.
+
+**Why this file exists separately from the conclusions:** the conclusions are a judgement
+call and will age. These are version numbers and command names, which age differently and
+can be re-checked against a URL. Keep the two apart so a stale opinion cannot borrow
+credibility from a fresh fact.
+
+## Versions and what actually shipped
+
+Obsidian desktop is at **1.14.0**, released 2026-09-02.
+
+Shipped features that matter to an automated system, with the release that carried them:
+
+| Feature | Shipped | Version |
+|---|---|---|
+| **Obsidian CLI** | Feb 2026 | 1.12 (early access), GA in 1.12.4 |
+| **Headless client for Sync** | Feb 2026 | 1.12 |
+| Bases search | Feb 2026 | 1.12 |
+| Template logic for Web Clipper | Feb 2026 | 1.12 |
+| Siri and Shortcuts integration | Jan 2026 | 1.11 |
+| Mobile widgets | Jan 2026 | 1.11 |
+| Keychain | Jan 2026 | 1.11 |
+| Obsidian Reader | Mar 2026 | — |
+| iOS Share Sheet | Jul 2026 | 1.13 |
+| Settings search | Jul 2026 | 1.13 |
+| Airtable import | Aug 2026 | — |
+| Kanban layout for Bases, collapsible groups | Sep 2026 | 1.14.0 |
+
+On the roadmap and **not shipped**: Kanban view for Bases (active), Obsidian for Work
+(active), Open individual Markdown files (active); Background Sync on mobile, Bases support
+for Publish, Calendar view for Bases, Canvas support for Publish, Multiplayer, PDF
+annotation, Sort search results by relevance (all planned).
+
+### One claim to not build on
+
+Several 2026 SEO blogs describe a privacy-first Obsidian AI toolkit codenamed **"Neuron"**,
+with local small models and optional API models. It appears on **neither** the official
+roadmap **nor** the changelog. Treat it as unverified and probably fabricated — 2026 has a
+lot of AI-generated Obsidian listicles that invent features. Do not plan around it.
+
+## The CLI — the significant finding
+
+Obsidian ships a first-party command line interface. It needs **no community plugin**.
+
+- Enable at **Settings → General → Command line interface**, then follow the registration
+  prompt. Requires the 1.12+ installer; docs state 1.12.7+.
+- On macOS it installs a symlink at `/usr/local/bin/obsidian`.
+- **Obsidian must be running.** If it is not, the first command launches it.
+- Syntax: `obsidian [vault=<name>] <command> [key=value ...]`. Quote values containing
+  spaces. Bare `obsidian` opens a TUI with autocomplete and `Ctrl+R` history search.
+- Roughly 100+ commands. It communicates with the running app over IPC.
+
+Command surface, grouped (this grouping is from a third-party guide cross-checked against
+the official docs page, which confirms the categories but does not enumerate every command):
+
+- **Daily notes** — `daily`, `daily:path`, `daily:read`, `daily:append`, `daily:prepend`
+- **Files** — `create` (with `content=` or `template=`), `read`, `append`, `prepend`,
+  `move` (updates wikilinks), `delete`
+- **Search** — `search`, `search:context`, `backlinks`, `links`, `orphans`
+- **Properties** — `property:set` (`type=text|list|number|checkbox|date`), `property:read`,
+  `property:remove`, `aliases`
+- **Tasks and tags** — `tasks` (`todo|done|daily|all`), `task`, `tags`
+- **Templates and Bases** — `templates`, `template:insert`, **`base:query`** (returns JSON,
+  CSV, TSV, MD or paths), `base:create`
+- **Execution** — `command` (run any Obsidian command by id), `eval` (arbitrary JS with full
+  `app` access)
+- **Other** — `history`, `history:restore`, `diff`, `outline` (`format=tree|md|json`),
+  `plugins`, `plugin:enable`, `plugin:disable`
+
+### The gotcha that will bite, and has bitten this system before
+
+> **Exit codes are always 0, even on failure.** Errors must be detected by parsing the
+> command's output text.
+
+This is precisely the failure mode already recorded in this repo's `CLAUDE.md` — a piped
+command reporting the pipe's exit status let a failing test get committed. Any wrapper
+around `obsidian` that gates on `$?` is a check that cannot fail. If the CLI is wired into
+anything, the wrapper must parse output and must have a negative-control test proving it
+reports failure when the underlying call failed.
+
+### Why `base:query` is more interesting than it looks
+
+`base:query` returns **JSON**. That makes Bases a queryable interface over vault
+frontmatter, not merely a UI. A `.base` file becomes a saved query that both a human reads
+as a table in the app and a script reads as structured data — one definition, two consumers,
+no second source of truth to drift.
+
+## Headless Sync — real, documented, and paid
+
+`obsidian.md/help/sync/headless`:
+
+- A command-line sync client, explicitly for "CI pipelines, agents, and automated
+  workflows". Same encryption as desktop, including end-to-end.
+- Prebuilt binaries for Windows (x64/ARM64/IA32), macOS (x64/ARM64), and **Linux**. Linux
+  works but lacks native birthtime preservation.
+- Install: `npm install -g obsidian-headless` (needs Node/npm). Currently **open beta**.
+- Auth: `ob login`, then `ob sync-setup --vault "<name>"`. Requires an **active Obsidian
+  Sync subscription**.
+- **Stated limitation:** it cannot run at the same time as desktop Sync *on the same
+  device* — data conflict risk. A different machine is fine.
+- Docs recommend backing up before first use.
+
+**Why this matters here:** a cloud session has no route to the Mac unless a human links the
+task to the computer. A headless client on a machine a cloud session *can* reach would hold
+a live replica of the vault. That is the only documented, first-party mechanism that
+addresses the split.
+
+**Why it is not free:** it needs a paid Sync subscription, and the "same device" limitation
+means it is a *second* machine's client, not a replacement for the Mac's. Whether to buy is
+the owner's call, not an agent's — it is a spend.
+
+## Prices, as published
+
+| Product | Annual | Monthly | Notes |
+|---|---|---|---|
+| Sync | $4/user/mo billed annually | $5/user/mo | E2E encryption, version history |
+| Publish | $8/site/mo billed annually | $10/site/mo | Public site from vault notes |
+| Catalyst | $25 one-time | — | Early access to betas |
+| Commercial licence | $50/user/yr | — | For organisations using Obsidian for work |
+
+The pricing page does not state storage limits, device counts, or vault counts.
+
+Note the commercial-licence line. A one-person LLC running a vault as business
+infrastructure is plausibly in scope. That is a question for the owner, not a thing to
+assume either way.
+
+## `.base` file format
+
+A `.base` file is YAML with five top-level sections: `filters`, `formulas`, `properties`,
+`summaries`, `views`. By default a base includes **every file in the vault** until filters
+narrow it.
+
+```yaml
+filters:
+  and:
+    - file.inFolder("memory")
+    - 'status != "retired"'
+
+formulas:
+  age_days: '(now() - verified).format("D")'
+
+properties:
+  verified:
+    displayName: Last verified
+  formula.age_days:
+    displayName: Days since checked
+
+views:
+  - type: table
+    name: Stale first
+    filters:
+      and:
+        - 'formula.age_days > 14'
+    order:
+      - file.name
+      - verified
+      - formula.age_days
+    summaries:
+      formula.age_days: Max
+```
+
+Mechanics worth knowing:
+
+- Filters accept `and` / `or` / `not`, nested recursively. Statements are either comparisons
+  (`status != "done"`) or function calls (`file.hasTag("x")`, `file.inFolder("y")`,
+  `file.hasLink("z")`).
+- Global filters and view filters concatenate with AND.
+- Property references: `note.price` (the `note.` prefix is optional), `file.size` /
+  `file.ext` / `file.name`, `formula.<name>`.
+- Formulas are stored as YAML strings; their output type follows the underlying data. No
+  circular references.
+- Summaries operate on a `values` collection — built-ins include Average, Min, Max, Sum,
+  Range, Median, Stddev for numbers; Earliest/Latest/Range for dates; Checked/Unchecked for
+  booleans; Empty/Filled/Unique for anything.
+- View types: `table`, `cards`, `list`, `map`, and as of 1.14 `kanban`. Views take `name`,
+  `limit`, `groupBy`, `filters`, `order`, `summaries`.
+
+## Sources
+
+- <https://obsidian.md/roadmap/>
+- <https://obsidian.md/changelog/>
+- <https://obsidian.md/help/cli>
+- <https://obsidian.md/help/sync/headless>
+- <https://obsidian.md/help/bases/syntax>
+- <https://obsidian.md/pricing>
+- Third-party, cross-checked where noted:
+  <https://www.dsebastien.net/the-complete-guide-to-the-obsidian-cli-everything-you-can-do-from-the-terminal/>
