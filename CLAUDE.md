@@ -754,9 +754,28 @@ Do not re-litigate these; they were measured, not assumed. Each is now held by a
     bradycardia/ACLS context word nearby. A bare `0.5 mg` match is not enough — 0.5 mg is
     correct for other atropine indications, and one page's *"paradoxical bradycardia possible
     with doses below 0.5mg"* is correct content that must survive the edit.
+  - **The first run of the repair MISSED one, and the guard could not see the miss.** The
+    pattern bounded the gap between drug name and dose at 60 chars; in
+    `cardiac-dysrhythmia-nursing-guide-2026` the name, indication and dose sit in three table
+    cells, ~62 chars apart. The corpus guard reuses the same regex, so it went green while a
+    wrong dose was still live. **A checker that shares its blind spot with the thing it checks
+    cannot see its own miss** — the bound is now 120 (chosen by sweeping 60→200 over the whole
+    corpus: exactly one more match, no false positives) and both layouts are pinned by tests.
+  - **OPEN, UNVERIFIED — amiodarone in the same file.** A dose audit flagged
+    `cardiac-dysrhythmia-nursing-guide-2026`'s drug table for printing *"150 mg over 10 min
+    for pulseless VT/VF; 150 mg over 10 min for stable VT"*. In cardiac arrest ACLS gives
+    amiodarone **300 mg IV/IO push** as the first dose (150 mg for the second); "150 mg over
+    10 minutes" is the *stable VT* regimen, which the same row then states correctly — so the
+    row appears to apply the perfusing-rhythm regimen to the arrest indication. **Not
+    changed.** Unlike the atropine figure this was never adversarially verified (the audit's
+    verifier agents all died on a session limit), and the edit would change route and rate
+    rather than a single number. It needs the owner's sign-off as an RN.
   - **The exposure this sampled is not closed.** ~120 pages carry ~1,187 explicit dose
-    expressions, none clinically reviewed. This fix corrected the one error already proven by
-    the product hold; it says nothing about the other 1,180.
+    expressions, none clinically reviewed. The audit that found the amiodarone item covered
+    only 1 of 7 planned drug classes before the session limit stopped it — the other six
+    (vasoactive, sedation, paralytics/reversal, anticoagulation/cardiac, electrolytes,
+    endocrine/renal) were never examined. **Do not read the audit's "0 confirmed" as "clean";
+    it means verification never ran.**
 
 - **`seo_index_sync.py` would add 852 orphan cards** to `index.html` on its next run.
   Whether those articles should be linked from the homepage at all is a curation decision

@@ -43,9 +43,21 @@ from pathlib import Path
 
 from safe_write import safe_write_html
 
-# The drug name, then up to 60 chars of markup/whitespace, then the dose. Bounded so it
-# cannot leap from one table row to a dose belonging to a different drug.
-DOSE = re.compile(r"(?is)(atropine\b.{0,60}?)(\b0\.5\s*mg\b)")
+# The drug name, then a bounded run of markup/whitespace, then the dose. The bound exists so
+# the pattern cannot leap from one table row to a dose belonging to a different drug.
+#
+# WIDENED 60 -> 120 on 2026-09-02, same day, because 60 was too tight and the first run of
+# this script MISSED one. In cardiac-dysrhythmia-nursing-guide-2026 the drug name and the dose
+# sit in different table cells with the indication between them:
+#   <td>Atropine</td><td>Symptomatic bradycardia, heart block (type I/II)</td><td>0.5 mg IV…
+# — about 62 characters, just past the old bound. The guard test used the same regex, so it
+# reported clean while the wrong dose was still live: the instrument and the repair shared a
+# blind spot, which is why a green check here never meant the corpus was clean.
+#
+# 120 was chosen by measurement, not taste: sweeping the bound from 60 to 200 over the whole
+# corpus surfaces exactly one additional match (the one above) and nothing else, so there is
+# no false-positive cost to the wider window and no reason to go further.
+DOSE = re.compile(r"(?is)(atropine\b.{0,120}?)(\b0\.5\s*mg\b)")
 CONTEXT = re.compile(r"(?i)brady|heart block|symptomatic|acls|algorithm|pacing|code blue|asystole")
 WINDOW = 300
 

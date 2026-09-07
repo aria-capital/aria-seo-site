@@ -79,3 +79,26 @@ def test_no_live_page_gives_atropine_0_5_mg_for_bradycardia():
         "pre-2020 atropine dose (0.5 mg) live in a bradycardia context: "
         f"{offenders}. The 2020 algorithm first dose is 1 mg."
     )
+
+
+def test_catches_the_table_layout_that_escaped_the_first_run():
+    """The regression that proves the guard and the repair shared a blind spot.
+
+    In cardiac-dysrhythmia-nursing-guide-2026 the drug name, the indication and the dose sit
+    in three separate cells, putting ~62 characters between "Atropine" and the figure. The
+    original 60-char bound missed it, and because this test file reuses the same regex, the
+    corpus guard below reported clean while the wrong dose was still live. A checker that
+    shares its blind spot with the thing it checks cannot see its own miss."""
+    row = ("<tr><td>Atropine</td><td>Symptomatic bradycardia, heart block (type I/II)</td>"
+           "<td>0.5 mg IV q3&ndash;5 min; max 3 mg total</td></tr>")
+    out, n = F.correct(row)
+    assert n == 1, "the three-cell table layout must be caught"
+    assert "<td>1 mg IV q3&ndash;5 min" in out
+
+
+def test_the_bound_still_refuses_to_cross_into_another_drugs_row():
+    """Widening to 120 must not let the pattern reach a different drug's dose. The filler here
+    is longer than the bound, so a match would mean the window had stopped being a guard."""
+    html = "<td>Atropine</td><td>bradycardia</td>" + ("<td>filler</td>" * 12) + "<td>0.5 mg</td>"
+    _out, n = F.correct(html)
+    assert n == 0
