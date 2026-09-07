@@ -12,9 +12,31 @@ credibility from a fresh fact.
 
 ## Versions and what actually shipped
 
-Obsidian desktop is at **1.14.0**, released 2026-09-02.
+> **Corrected 2026-09-07, same day, by an adversarial review of this file.** The first
+> version of this section said "Obsidian desktop is at 1.14.0, released 2026-09-02" and
+> listed 1.14.0's features as shipped. That is wrong, and wrong in the direction that would
+> have produced a plan nobody could run. The correction is kept visible rather than quietly
+> edited, because how the wrong answer was reached is worth more than the answer.
 
-Shipped features that matter to an automated system, with the release that carried them:
+**The latest PUBLIC desktop release is 1.13.7** (2026-08-12); the latest public mobile is
+1.13.8 (2026-08-20). **1.14.0 (2026-09-02) is Catalyst-only early access** — the changelog
+tags each release either `public` or `catalyst`, and 1.14.0 carries `catalyst`.
+
+Early access is gated: *"Early access versions are only available to users with a Catalyst
+license."* **Catalyst is a separate $25 one-time purchase, and a Sync subscription does not
+include it.**
+
+So everything 1.14.0 introduced — the **kanban layout for Bases**, collapsible groups in
+table/cards/list, colour highlights, Temml replacing MathJax, RTL support — **is not
+generally available** and must not be designed against. This is consistent with the roadmap
+still listing "Kanban view for Bases" as *active* rather than launched; early access is not
+shipped.
+
+The general lesson, which is the one this repo keeps re-buying: **a version number on a
+changelog is not the same as a version you can install.** Read the tag next to it.
+
+Shipped features that matter to an automated system, with the release that carried them.
+All of the following are `public` — available without Catalyst:
 
 | Feature | Shipped | Version |
 |---|---|---|
@@ -29,7 +51,9 @@ Shipped features that matter to an automated system, with the release that carri
 | iOS Share Sheet | Jul 2026 | 1.13 |
 | Settings search | Jul 2026 | 1.13 |
 | Airtable import | Aug 2026 | — |
-| Kanban layout for Bases, collapsible groups | Sep 2026 | 1.14.0 |
+
+Not in that table, because it is **not public**: kanban layout for Bases and collapsible
+groups, Sep 2026, 1.14.0, **Catalyst early access only**.
 
 On the roadmap and **not shipped**: Kanban view for Bases (active), Obsidian for Work
 (active), Open individual Markdown files (active); Background Sync on mobile, Bases support
@@ -49,6 +73,10 @@ Obsidian ships a first-party command line interface. It needs **no community plu
 
 - Enable at **Settings → General → Command line interface**, then follow the registration
   prompt. Requires the 1.12+ installer; docs state 1.12.7+.
+- **This survives the Catalyst correction above.** The CLI shipped `public` in 1.12.4, and
+  the current public release (1.13.7) is well past the 1.12.7 floor — so the CLI is
+  available without buying anything. It is the one major finding here that costs nothing
+  and is gated on nothing.
 - On macOS it installs a symlink at `/usr/local/bin/obsidian`.
 - **Obsidian must be running.** If it is not, the first command launches it.
 - Syntax: `obsidian [vault=<name>] <command> [key=value ...]`. Quote values containing
