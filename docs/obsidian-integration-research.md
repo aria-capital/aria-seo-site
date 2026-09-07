@@ -180,6 +180,79 @@ Mechanics worth knowing:
 - View types: `table`, `cards`, `list`, `map`, and as of 1.14 `kanban`. Views take `name`,
   `limit`, `groupBy`, `filters`, `order`, `summaries`.
 
+## What the cloud can actually see of the vault — measured 2026-09-07
+
+Measured from a cloud session with no device bridge, using only the Google Drive connector.
+This matters because it defines what a cloud session can know without a human linking a Mac.
+
+**A render bridge exists and is current.** `bin/aria-cloud-render.sh` writes `ARIA-CLOUD-MAP.md`
+into Drive. Today's render was stamped 16:14 UTC — under two hours old when read. So the
+bridge is alive, not theoretical.
+
+**But it is lossy by two orders of magnitude, and it says so itself.** Today's header:
+
+> 94 record(s) marked `cloud: true` · 4 published · 0 withheld by the credential guard ·
+> **90 dropped to fit the 32768-byte cloud cap** · vault holds 629 records total.
+
+So of 629 records, 94 are opted in, and **4 arrive**. Individual records are additionally cut
+at a 2,400-byte per-record cap, mid-sentence. The render is admirably honest about this — it
+names the drop count and lists what it left behind — but a cloud session reading it is seeing
+roughly 0.6% of the vault.
+
+**The full archive is pushed to Drive and cannot be read from the cloud.** Vault archives
+(~25.7 MB, `aria-archive-YYYYMMDD-HHMM.tar.gz`) land in Drive roughly every six hours with a
+`MANIFEST.sha256` beside them; the newest was 16:12 UTC today. Attempting to download one
+through the Drive connector fails:
+
+```
+File too large for download, over limit of 10 MB.
+```
+
+That is worth stating plainly: **the backup path proves the data left the Mac, but does not
+let anyone in the cloud read it.** Those are different properties, and the archive only has
+the first. A cloud session's real read surface is the 32 KB render, not the 25 MB archive.
+
+### The diagnosis the vault has already made about itself
+
+This is the most important input to any Obsidian design here, and it did not come from
+research — it came from the vault's own `STANDING-DECISIONS.md`:
+
+> 571 records, findings written as orphans nothing links to, and — until 2026-09-06 —
+> `INDEX.md` at 82 KB, too large to load into a session at all. **Decisions that cannot be
+> reached get re-litigated by the next session, which then contradicts them in good faith.
+> That is not a memory problem, it is a retrieval problem.**
+
+And, in the same file:
+
+> **The vault is 600 records deep and reading it feels like working — that is the trap.**
+> A record is a claim about the past. The world is the instrument.
+
+Two consequences for anything built on top of this vault:
+
+1. **Capture is not the bottleneck.** 629 records exist. The system is extremely good at
+   writing things down and bad at getting them back. Any proposal that adds a new way to
+   record things is treating the symptom the vault has already ruled out.
+2. **Nothing here captures automatically.** Every record exists because a session chose to
+   write it, and a session that ends between a result and its record loses the result. So a
+   mechanism that only works when someone remembers to run it is already the failure mode.
+
+### The constraint that disqualifies the most attractive option
+
+The headless Sync client is the cleanest technical answer to the cloud/Mac split. It should
+still probably be refused, and the reason is not technical.
+
+This project's stated first financial milestone is **reducing recurring spend** — the machine
+paying for itself before it earns anything. A new subscription, however cheap, moves in the
+opposite direction of the only currently live goal. `$4/month` is small; `a new recurring line
+item added while trying to cut recurring line items` is not a small thing to explain.
+
+The free alternative already exists and is running: the render bridge. It is not lossy because
+Drive is bad, it is lossy because of **a 32 KB cap in a shell script**. Raising or paginating
+that cap costs nothing per month and recovers most of what the paid option would buy.
+
+That is the shape of the honest recommendation here — fix the free thing that is already
+running before buying the thing that would replace it.
+
 ## Sources
 
 - <https://obsidian.md/roadmap/>
