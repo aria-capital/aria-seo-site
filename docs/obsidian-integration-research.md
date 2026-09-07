@@ -105,6 +105,26 @@ the official docs page, which confirms the categories but does not enumerate eve
 > **Exit codes are always 0, even on failure.** Errors must be detected by parsing the
 > command's output text.
 
+**Provenance, stated because this claim is load-bearing and I could not confirm it.** That
+sentence comes from **one third-party guide**. Obsidian's own CLI page was re-read
+specifically for it and **says nothing about exit codes, error reporting or return status**
+— its troubleshooting section covers installation and registration only. So this is an
+UNVERIFIED third-party claim, not a documented one.
+
+It is kept here rather than dropped because it is cheap to settle and expensive to get
+wrong, and because the failure it predicts is one this repo has already paid for once. **One
+command on the Mac settles it**, and it carries its own negative control — a command that
+must succeed and one that must fail:
+
+```bash
+obsidian read path=README.md            >/dev/null 2>&1; echo "exists   -> $?"
+obsidian read path=__no_such_file__.md  >/dev/null 2>&1; echo "missing  -> $?"
+```
+
+Two zeros means the claim is true and every wrapper must parse output. A non-zero on the
+second means the claim is false and `$?` can be trusted. **Until someone runs that, treat
+the claim as unproven in both directions** — do not build a wrapper that assumes either.
+
 This is precisely the failure mode already recorded in this repo's `CLAUDE.md` — a piped
 command reporting the pipe's exit status let a failing test get committed. Any wrapper
 around `obsidian` that gates on `$?` is a check that cannot fail. If the CLI is wired into
