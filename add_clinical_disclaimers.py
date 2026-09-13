@@ -72,10 +72,62 @@ CLINICAL_SLUG = re.compile(
     re.I,
 )
 
+# WIDENED AGAIN 2026-09-02, and this time by CONTENT rather than by filename.
+#
+# The slug list above is still a classifier fitted to filenames, and the comment above it
+# already records that shape failing once. It failed again: measured today, 12 pages that
+# carry three or more explicit drug doses are invisible to it, among them
+# `nursing-dosage-calculation-guide-2026` (39 dose expressions),
+# `pediatric-medication-dosing-guide-2026` (28, paediatric) and
+# `calcium-chloride-vs-gluconate-icu-2026`. What makes a page clinically risky is the dosing
+# printed on it, not the words in its filename, so the dose count is now the primary test and
+# the slug list is a fallback for clinical pages that quote no numbers.
+DOSE_EXPR = re.compile(r"\b\d+(?:\.\d+)?\s*(?:mg|mcg|µg|units?|mEq|g)\b", re.I)
+MIN_DOSES = 3
+
+# Doses alone are not enough. `article-shift-worker-fitness-guide` prints melatonin 0.5-3 mg
+# and magnesium 400 mg, which are real doses in a consumer-health article — and DISCLAIMER is
+# addressed to "licensed clinicians and students… follow facility policy", which would read as
+# nonsense there. So a page must ALSO speak the bedside register. Writing a second,
+# consumer-facing disclaimer is new copy, and new copy is the owner's decision, not a script's.
+BEDSIDE = re.compile(
+    r"\bIV\b|IV push|IV/IO|\bIM\b|titrat|infusion|bolus|drip|mg/kg|mcg/kg|per kg|"
+    r"provider|physician|APRN|pharmacist|order set|protocol|bedside|nurse|patient",
+    re.I,
+)
+
+
+def is_clinical(name: str, text: str) -> bool:
+    """Clinical if the slug says so, or if the page prints real doses in a bedside register.
+
+    The dose count is the primary test because what makes a page risky is the dosing printed
+    on it, not the words in its filename — see the note on CLINICAL_SLUG above, which records
+    this same classifier shape failing once already."""
+    if CLINICAL_SLUG.search(name):
+        return True
+    body = re.sub(r"(?is)<(script|style)[^>]*>.*?</\1>", " ", text)
+    plain = re.sub(r"<[^>]+>", " ", body)
+    return len(DOSE_EXPR.findall(plain)) >= MIN_DOSES and bool(BEDSIDE.search(plain))
+
+
 # Any of these means the page already discloses; do not add a second one.
+#
+# `verify with` and `clinical judg` were REMOVED 2026-09-02. They are ordinary clinical prose,
+# not disclaimers, and they were producing a false green: the paediatric dosing guide — 28
+# doses, no disclaimer anywhere on it — was credited with one solely because it contains
+# "Always verify with actual weight as soon as possible", a sentence about Broselow tape.
+# A phrase that appears in normal body copy cannot stand in for a disclosure.
+# `consult a healthcare provider` was ADDED 2026-09-02 alongside those removals. The
+# shift-worker fitness guide carries a perfectly good consumer disclaimer — "General fitness
+# information only. Consult a healthcare provider before starting a new exercise program" —
+# and the pattern missed it purely because it read `consult your` and the page says `consult
+# a`. Widening the match is right; adding a second, clinician-worded disclaimer on top of a
+# consumer one would have been wrong.
 HAS_DISCLAIMER = re.compile(
-    r"not medical advice|educational purposes|educational (content|information)|consult your|"
-    r"does not constitute medical|clinical judg|institutional protocol|verify with|per your facility",
+    r"not medical advice|educational purposes|educational (content|information)|"
+    r"consult (your|a|an|with) ?(healthcare |medical )?(provider|physician|doctor|pharmacist|professional)?|"
+    r"does not constitute medical|not a substitute for|medical disclaimer|"
+    r"information only|institutional protocol|per your facility",
     re.I,
 )
 
@@ -109,9 +161,13 @@ def add_disclaimer(text: str) -> str | None:
 
 def main() -> int:
     dry = "--dry-run" in sys.argv
-    files = sorted(
-        f for f in os.listdir(HERE) if f.endswith(".html") and CLINICAL_SLUG.search(f)
-    )
+    files = []
+    for f in sorted(os.listdir(HERE)):
+        if not f.endswith(".html"):
+            continue
+        with open(os.path.join(HERE, f), encoding="utf-8", errors="replace") as fh:
+            if is_clinical(f, fh.read()):
+                files.append(f)
 
     added = skipped = refused = 0
     for name in files:

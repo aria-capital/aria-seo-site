@@ -57,9 +57,21 @@ TARGET = 934          # the plan of record's batch-1 size
 MIN_WORDS = 600       # below this an article reads as thin regardless of ranking
 
 # Linked from every page; they belong in the sitemap as navigation, not as ranked content.
+#
+# 2026-09-02: the six HUB pages were added here after Search Console measurement showed the
+# ranker had split them. Hubs are ranked by body word count like any article, and two of the
+# six fell below the batch-1 cut — so `icu-devices-hub-2026.html` and `federal-nurse-hub-2026.html`
+# were left out of the sitemap AND given `noindex, follow` by apply_noindex_to_uncurated.py,
+# while both remained linked from the homepage as primary navigation. Google's live URL
+# inspection returned "Excluida por una etiqueta noindex" for them on 2026-09-02.
+# A hub is structure, not content: it is the only discovery path to its cluster, so its word
+# count is the wrong property to rank it on. They belong here, with the other navigation.
 CORE_PAGES = [
     "", "about.html", "contact.html", "privacy-policy.html",
     "affiliate-disclosure.html", "terms-of-service.html",
+    "icu-emergencies-hub-2026.html", "icu-devices-hub-2026.html",
+    "icu-pharmacology-hub-2026.html", "crna-career-hub-2026.html",
+    "federal-nurse-hub-2026.html", "travel-nurse-hub-2026.html",
 ]
 META = {
     "index.html", "about.html", "contact.html", "privacy-policy.html", "privacy.html",
@@ -107,7 +119,15 @@ def build_xml(names: list[str], base: str) -> str:
     for page in CORE_PAGES:
         lines.append(f"  <url><loc>{base}{page}</loc><lastmod>{today}</lastmod>"
                      f"<changefreq>monthly</changefreq><priority>0.5</priority></url>")
+    # 2026-09-02: dedupe. CORE_PAGES used to hold only meta pages, which the ranker skips via
+    # META, so nothing could collide. Adding the hubs here broke that assumption — four of the
+    # six also rank into `names`, and this loop would have emitted them a second time. A sitemap
+    # with duplicate <loc> entries is exactly the kind of malformation that costs a crawler's
+    # trust, and nothing downstream was checking for it.
+    core = set(CORE_PAGES)
     for name in names:
+        if name in core:
+            continue
         lines.append(f"  <url><loc>{base}{name}</loc><lastmod>{today}</lastmod>"
                      f"<changefreq>monthly</changefreq><priority>0.8</priority></url>")
     lines.append("</urlset>")
@@ -138,7 +158,12 @@ def main() -> int:
 
     # The only caller allowed to pass this. See safe_write.safe_write_sitemap.
     safe_write_sitemap(OUT, xml, curated=True)
-    print(f"\n  wrote {OUT} — {len(names) + len(CORE_PAGES)} URLs")
+    # Count what was WRITTEN, not what was intended. Until 2026-09-02 this printed
+    # len(names) + len(CORE_PAGES), which stopped being the truth the moment the two lists
+    # could overlap: it said 946 over a file holding 942. A summary line that is computed
+    # rather than measured is the oldest way an honest script starts lying.
+    written = xml.count("<loc>")
+    print(f"\n  wrote {OUT} — {written} URLs")
     print("  Every article remains live; this only changes what is advertised to crawlers.")
     return 0
 
