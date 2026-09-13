@@ -78,16 +78,50 @@ def test_every_clinical_page_carries_a_disclaimer():
     """
     The point of the script. If a future bulk generation adds a drug article without a
     disclaimer, this fails rather than shipping it.
+
+    Asserted over is_clinical(), NOT over the slug list. Measured 2026-09-02, the slug-only
+    version of this test was green while five dose-bearing pages carried no disclaimer at
+    all — among them a dosage-calculation guide with 39 dose expressions and a paediatric
+    dosing guide with 28 — because none of their filenames contained a listed word. A test
+    that defines its own population by filename cannot see the pages the filename misses.
     """
     import os
 
-    files = [f for f in sorted(os.listdir(A.HERE))
-             if f.endswith(".html") and A.CLINICAL_SLUG.search(f)]
+    files = []
+    for name in sorted(os.listdir(A.HERE)):
+        if not name.endswith(".html"):
+            continue
+        with open(os.path.join(A.HERE, name), encoding="utf-8", errors="replace") as fh:
+            text = fh.read()
+        if A.is_clinical(name, text):
+            files.append((name, text))
     assert files, "no clinical pages found"
 
-    missing = []
-    for name in files:
-        with open(os.path.join(A.HERE, name), encoding="utf-8", errors="replace") as fh:
-            if not A.HAS_DISCLAIMER.search(fh.read()):
-                missing.append(name)
-    assert missing == []
+    missing = [n for n, t in files if not A.HAS_DISCLAIMER.search(t)]
+    assert missing == [], f"clinical pages with no disclaimer: {missing}"
+
+
+def test_a_dose_bearing_page_is_clinical_even_when_its_filename_says_nothing():
+    """The regression that mattered: content decides, not the slug."""
+    doses = "<p>Give 5 mg IV push, then 10 mg, then 250 mcg for the patient.</p>"
+    assert A.is_clinical("totally-innocuous-name.html", "<html><body>" + doses + "</body></html>")
+    assert not A.is_clinical("zero-based-budgeting-guide.html", "<html><body><p>Save 500 a month.</p></body></html>")
+
+
+def test_consumer_health_prose_is_not_mistaken_for_a_clinical_page():
+    """A fitness article quoting melatonin 0.5-3 mg is health content, but DISCLAIMER is
+    addressed to licensed clinicians and would read as nonsense there. It also already
+    carries its own consumer disclaimer, which HAS_DISCLAIMER must recognise."""
+    page = ("<html><body><p>Melatonin 0.5 mg, magnesium 400 mg, vitamin D 25 mcg.</p>"
+            "<p>General fitness information only. Consult a healthcare provider "
+            "before starting a new exercise program.</p></body></html>")
+    assert A.HAS_DISCLAIMER.search(page)
+    assert A.add_disclaimer(page) is None
+
+
+def test_ordinary_clinical_prose_does_not_count_as_a_disclaimer():
+    """`verify with` and `clinical judgment` appear in normal body copy. Counting them was a
+    false green: the paediatric dosing guide was credited with a disclaimer solely because it
+    said "Always verify with actual weight as soon as possible"."""
+    assert not A.HAS_DISCLAIMER.search("<p>Always verify with actual weight as soon as possible.</p>")
+    assert not A.HAS_DISCLAIMER.search("<p>This requires clinical judgment at the bedside.</p>")

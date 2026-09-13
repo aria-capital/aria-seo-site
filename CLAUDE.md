@@ -545,14 +545,35 @@ works.** Fixing the site does not change that; only the owner's account actions 
 - **Gumroad lifetime revenue is $14.00, one sale**, on a product that shipped broken
   (duplicate PDFs, iOS black-screen), with a refund owed and apparently never issued. Six
   product slugs were deleted 2026-07-15 — any link to them 404s.
-- **Google has CRAWLED this site and DECLINED it. That is not the same problem as never
-  being found, and it has the opposite fix.** Commit `b8476741` (2026-08-05) records a real
-  `site:aria-capital.github.io` measurement: **exactly one page indexed — the homepage — and
-  zero of the 1,461 articles.** So discovery is not the bottleneck; quality assessment is.
-  **This is the single most important diagnostic fact in this file.** Every instinct to "get
-  the site submitted" aims at the wrong problem — you cannot repair a quality verdict by
-  telling a crawler about more URLs, and submitting more of an already-declined corpus argues
-  *against* the site.
+- **RETRACTED 2026-09-02 — "Google has CRAWLED this site and DECLINED it" is FALSE.** The
+  original wording is kept below because how this was got wrong matters more than the wrong
+  answer itself:
+  > ~~Google has CRAWLED this site and DECLINED it… discovery is not the bottleneck; quality
+  > assessment is. **This is the single most important diagnostic fact in this file.**~~
+
+  **What is actually true: Google has never SEEN the articles.** Search Console's Page
+  Indexing report, read in the owner's own browser on 2026-08-19 and again 2026-08-22, showed
+  **1 indexed and 0 NOT-indexed**. "Not indexed" counts URLs Google knows about and chose to
+  exclude; zero of those means no assessment ever happened. The sitemap row read *"no se ha
+  podido obtener / leer"* with **0 URLs discovered** — it was first submitted 2026-08-05 while
+  still pointing at the retired `carlostrujilloglz1991.github.io` host, and Google's record of
+  it stayed stuck even after the file was proven good (Googlebot fetches it live; 940 `<loc>`,
+  HTTP 200). The cause named by the evidence is **zero referring domains** — nothing anywhere
+  links here, so there is no discovery path beyond the sitemap.
+  - **The reasoning error, because it recurred three times.** A `site:` query returning one
+    result was read as "Google assessed 1,461 pages and kept one". It cannot distinguish
+    *declined* from *never crawled* — and Search Console, the only instrument that can, says
+    never crawled. Three independent analyses (a Fable architect pass, a Cowork session, a
+    56-agent audit) all reached the same wrong verdict from that one ambiguous signal. **A
+    `site:` count is not an indexing diagnosis.** Only the Page Indexing report is.
+  - **The corpus is not scaled-content-shaped, measured 2026-09-02.** Near-duplicate analysis
+    over all 939 advertised pages (8-word shingles, boilerplate stripped, detector validated
+    against controls: identical doc 100%, synthetic 70% overlap 52%): **maximum pairwise
+    similarity 6.5%, median 0.28%**; the most similar real pair is 10.3%. 939/939 distinct
+    titles, 938/939 distinct descriptions, 6,714 distinct H2/H3 headings, median 1,155 unique
+    words per page. This does not prove the writing is *good* — originality of phrasing is not
+    expertise, and no script can measure usefulness — but the mass-duplication signal that
+    "scaled content" refers to is absent. Re-measure before asserting otherwise.
   - A 2026-08-09 spot-check returned nothing at all, not even the homepage. Do not read that
     as a regression: that search backend is not confirmed to be Google and a Bing `site:`
     query was CAPTCHA-blocked, whereas `b8476741` used a real Google query. Search Console's
@@ -560,15 +581,25 @@ works.** Fixing the site does not change that; only the owner's account actions 
   - **The delivery side is verified healthy**, so nothing in this repo blocks indexing: the
     homepage renders, `robots.txt` is `Allow: /` and names the sitemap, and the deployed
     `sitemap.xml` is byte-identical to the repo's curated file.
-  - **The curated sitemap was cosmetic until 2026-08-09.** Measured: each of the 522
-    live-but-unadvertised articles is linked from **10–43 pages that ARE advertised**.
-    Crawlers follow links, so Google reached all 1,461 and judged the site on its weakest
-    pages regardless of what the sitemap said. `apply_noindex_to_uncurated.py` closes that —
-    518 uncurated articles now carry `<meta name="robots" content="noindex, follow">`, so
-    assessment sees 939 pages instead of 1,461. `follow` is deliberate: links still pass and
-    nothing is orphaned. Free precisely *because* nothing is indexed — the usual cost of
-    noindex is the traffic a page was earning, and that is measurably zero here. Revisit if
-    any of these ever start ranking. Reversal is exact and tested: `--remove`.
+  - **The 519 noindex tags rest on the retracted premise, and are an OPEN DECISION for the
+    owner.** `apply_noindex_to_uncurated.py` put `<meta name="robots" content="noindex,
+    follow">` on every uncurated article so that "assessment sees 939 pages instead of
+    1,461". That reasoning required Google to be *assessing* the pages. It was not, and is
+    not. What the tags do now: nothing today (Google reaches almost none of these), and a
+    hard cap later — the moment discovery starts working, a third of the corpus is
+    explicitly barred from the index.
+    - Measured 2026-09-02, the two sets are a clean word-count split with no overlap at the
+      median: advertised pages run p10 1,011 → p90 1,480 unique words; withheld pages p10
+      640 → p90 955 (median 834, max 1,016). So the withheld set is **thinner but not thin** —
+      roughly 433,000 words of non-duplicative content, normal article length, currently
+      withheld from a site whose whole problem is having nothing in the index.
+    - The honest case for keeping them: a site with zero authority may do better presenting
+      its strongest 939 pages than everything it has. That argument stands on its own and is
+      a judgement, not a measurement. The case against: it was adopted to fix a problem that
+      does not exist, and it costs a third of the corpus.
+    - **Do not flip this unilaterally in either direction** — it changes what search engines
+      may index, which is the owner's call. Reversal is one tested flag:
+      `python3 apply_noindex_to_uncurated.py --remove`.
 
 **After any sitemap rebuild, re-run `python3 apply_noindex_to_uncurated.py`.** It converges:
 pages that left the sitemap gain the tag and pages that entered it lose the tag. Measured
@@ -597,8 +628,11 @@ docs, so nobody spends another session rediscovering it:
   accounts.
 
 **Do not run IndexNow here.** Three independent adversarial reviews scored it
-negative-expected-value: it submits an already-declined corpus to engines carrying a fraction
-of the traffic, while the site sits on the scaled-content line.
+negative-expected-value. Note the original rationale — *"it submits an already-declined
+corpus"* — died with the retraction above; the corpus was never declined. What survives is
+the part that did not depend on it: IndexNow does not include Google, so it cannot touch the
+engine that matters, and pushing a zero-authority site at the engines it does reach buys
+little. Weak-negative, not the strong-negative it was recorded as.
 
 The one genuine headless unlock, if it is ever wanted: a Google Cloud **service account added
 as a delegated owner in Search Console**. After that, sitemap submission and index-status
@@ -607,10 +641,15 @@ enter this public repo.
 
 **The plan of record is `plan-30-days-20260728.md`** (Fable, human-reviewed): make the real
 Gumroad products and the best ~700 clinical articles reachable and honest; **build nothing
-new**. Its explicit warning matters here — *do not submit all 1,461 URLs for indexing*: the
-site matches three of Google's four scaled-content-abuse triggers, and a mass submission is
-manual-action bait. Use the curated 934-URL sitemap it describes. (Note: the 379 articles
-that plan quarantines are all still live and serving.)
+new**. Its warning — *do not submit all 1,461 URLs for indexing* — still holds, but **for a
+different reason than it gives.** It cites "three of Google's four scaled-content-abuse
+triggers"; the duplication trigger, the one that is actually measurable, was tested on
+2026-09-02 and is absent (max pairwise similarity 6.5%). Nobody has since re-derived which
+triggers the site does hit, so treat "three of four" as unverified. The surviving reason to
+stage submission is plainer: a site with **zero referring domains** and one indexed page has
+no authority, and a first-ever dump of 1,461 URLs from such a site reads as a content farm
+whether or not it is one. Use the curated sitemap. (The 379 articles that plan quarantines
+are all still live and serving.)
 
 **ARIA itself is unrun scaffolding, not an operating company.** `intent_router` has a
 lifetime route count of **0** — the front door has never been used. Department health scores
@@ -698,6 +737,71 @@ Do not re-litigate these; they were measured, not assumed. Each is now held by a
   build anything on Supermetrics — its trial was already expiring in 2026-08.
 
 ## Known issues
+
+- **CLINICAL — CORRECTED 2026-09-02, and the lesson is the part to keep.** The 2026-08-19
+  clinical hold pulled `vrseeu` partly because its ACLS card printed bradycardia atropine as
+  **0.5 mg**; the 2020 algorithm first dose is **1 mg**. The product was held and **the
+  articles that share its generator were never searched**. Eight weeks later the same figure
+  was still live in 5 articles (7 instances), three of them advertised to Google.
+  `fix_atropine_dose.py` corrected all 7; `tests/test_fix_atropine_dose.py` keeps a
+  corpus-wide guard so it cannot come back, and the owner (an RN) should still eyeball the
+  five pages.
+  - **The generalizable lesson, which is why this entry stays after the fix: a defect found
+    in one artifact was never searched for in its siblings.** When a content defect is found
+    anywhere, grep the whole corpus for it the same day.
+  - Method, if a similar sweep is ever needed: match `atropine` within ~60 chars of the dose
+    (bounded, so it cannot leap across table rows to another drug's figure) AND require a
+    bradycardia/ACLS context word nearby. A bare `0.5 mg` match is not enough — 0.5 mg is
+    correct for other atropine indications, and one page's *"paradoxical bradycardia possible
+    with doses below 0.5mg"* is correct content that must survive the edit.
+  - **The first run of the repair MISSED one, and the guard could not see the miss.** The
+    pattern bounded the gap between drug name and dose at 60 chars; in
+    `cardiac-dysrhythmia-nursing-guide-2026` the name, indication and dose sit in three table
+    cells, ~62 chars apart. The corpus guard reuses the same regex, so it went green while a
+    wrong dose was still live. **A checker that shares its blind spot with the thing it checks
+    cannot see its own miss** — the bound is now 120 (chosen by sweeping 60→200 over the whole
+    corpus: exactly one more match, no false positives) and both layouts are pinned by tests.
+  - **CORRECTED 2026-09-07 — amiodarone arrest dose in the same file.** The drug table printed
+    *"150 mg over 10 min for pulseless VT/VF; 150 mg over 10 min for stable VT"*. "150 mg over
+    10 minutes" is the *stable VT* regimen; in arrest the 2020 algorithm gives **300 mg IV/IO
+    push** first (150 mg second), and a 10-minute infusion cannot be delivered during CPR at
+    all. Verified 3/3 by independent skeptics instructed to refute it and to default to
+    refuted when uncertain. Their decisive argument was corpus-internal: **the site states the
+    arrest dose correctly on three other pages** — `acls-bls-nurse-certification-guide-2026`
+    uses the identical two-clause structure, plus `code-blue-nursing-guide-2026` and
+    `amiodarone-guide-icu-nurses-2026` — while `300 mg` appeared **zero** times in the
+    offending file. It was the lone outlier, so the repair propagates the publisher's own
+    wording rather than inventing any. `fix_arrest_amiodarone_dose.py`, guarded by
+    `tests/test_fix_arrest_amiodarone_dose.py`. The stable-VT clause in the same cell is
+    correct and was deliberately left untouched.
+
+- **CLINICAL — OPEN, two verified IV potassium errors that need the owner.** Both survived
+  3/3 adversarial verification; both are on **advertised** pages. **Not changed**, because
+  the correct value is a range that varies by institutional protocol — picking the
+  replacement number is clinical judgement, not propagation of a published constant.
+  - `diabetic-ketoacidosis-nursing-guide-2026`: *"Replace K+ first (40 mEq/hr max
+    peripherally; >10 mEq/hr central)"*. The sentence contradicts itself — it caps a
+    **peripheral** line at four times the rate it simultaneously names as **central**
+    territory. The figures look transposed. Usual peripheral ceiling is ~10 mEq/hr (up to ~20,
+    protocol-dependent), above which central access and continuous ECG are required.
+  - `fluid-electrolytes-nursing-guide-2026`: *"max concentration 40 mEq/100 mL peripheral.
+    Central line required for … concentrations above 40 mEq/100 mL"* — again self-cancelling,
+    naming one figure as both the peripheral maximum and the central threshold.
+    40 mEq/100 mL is 400 mEq/L, a central-line concentration.
+  - Why these deserve the owner's minutes: rapid or concentrated IV potassium is a classic
+    fatal medication error, and both pages read as safety boxes — precisely where a nurse
+    looks for the number that decides whether a central line is needed.
+
+  - **The exposure is now sampled, not closed.** ~120 pages carry ~1,187 explicit dose
+    expressions, none clinically reviewed. A 7-class audit of 251 high-alert drug/dose pairs
+    (2026-09-07, 19 agents, adversarial verification on every candidate) produced **3
+    confirmed errors, all high-severity**: the amiodarone item above and the two potassium
+    items. Five classes — vasoactive, sedation, paralytics/reversal, anticoagulation/cardiac,
+    endocrine/renal — returned nothing, which is a real negative result but covers only the
+    drug/dose pairs the extractor matched. It is not a clean bill for all 1,187 figures. A
+    verifier also flagged `amiodarone-vs-lidocaine-icu-nurses-2026` and
+    `wide-complex-tachycardia-vt-icu-nurses-2026` as mentioning arrest dosing without being
+    reached by this pass.
 
 - **`seo_index_sync.py` would add 852 orphan cards** to `index.html` on its next run.
   Whether those articles should be linked from the homepage at all is a curation decision
