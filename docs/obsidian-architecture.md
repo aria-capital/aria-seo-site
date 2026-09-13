@@ -14,6 +14,66 @@ are the deliverable.
 > instrument that measured it. `aria status`, `aria caps` and `aria doctor` outrank this
 > document on every shared fact.
 
+## CORRECTION 2026-09-13 — read before the thesis
+
+Six days after this document was written, the vault was attached to a cloud session as a
+private GitHub repository and cloned. That single act refutes a premise running through the
+whole document, and the correction is placed above the thesis rather than at the end,
+because reading the thesis without it produces the wrong plan.
+
+**1. A cloud session is not limited to 0.6% of the vault. It can read all of it.**
+
+The thesis says *"the cloud's window into the vault is currently 4 records of 636 behind a
+32 KB cap in a shell script."* That is true of **the Drive render**, and it was presented as
+though it were true of **the cloud**. It is not. Measured today:
+
+```
+add_repo aria-capital/ARIA-Brain  ->  attached
+git clone --depth 1               ->  631 memory records, 729 markdown files
+```
+
+Seconds, no subscription, no plugin, no new mechanism. `HANDOFF.md`, `STANDING-DECISIONS.md`,
+`AUTONOMY.md`, `STATUS.md`, `WORKFLOW.md` and the whole of `memory/` are directly readable.
+
+This substantially weakens **move 7 (widen the bus)**. For an interactive cloud session the
+bus does not need widening — git already carries the entire vault, losslessly. What move 7
+still addresses is the narrower case of **scheduled Routines**, which fire without the
+ability to attach a repo. Re-scope it to that before building it, and do not spend a Mac
+session widening a render for readers who have a better path.
+
+The reason this was missed is worth more than the fact: every instrument consulted on
+2026-09-07 measured *remote* capability — connectors, tool search, the Drive API. None asked
+whether the vault was reachable as a repository. **The enumeration was run correctly and was
+still the wrong enumeration.**
+
+**2. The vault already uses Bases.** `Records.base` sits at the vault root. The research
+treated Bases as something to introduce and debated whether it was worth introducing; it is
+already in use. Any Bases recommendation must start from that file, not from a blank vault.
+
+**3. `.obsidian/plugins/` is absent — the zero-plugin finding is confirmed**, now from the
+vault's own tree rather than from a dated note. That part of the architecture stands.
+
+**4. The hourly sync has produced nothing for six days, and nothing announced it.**
+
+The vault repo's remote HEAD is `87b38770`, dated **2026-09-07 10:14**. The newest Daily note
+is `2026-09-07.md`. PR #15 documents this bridge as syncing **hourly**.
+
+```
+git ls-remote origin HEAD  ->  87b38770…  (2026-09-07 10:14 -0700)
+```
+
+What this proves is narrow and should not be overstated: **the sync has committed nothing in
+six days.** It does not prove the Mac is off, or that the vault is unchanged — Carlos may
+simply not have run sessions. But it does mean **a cloud session reading this repo today
+would take a six-day-old snapshot as current truth**, which is this system's defining
+failure arriving through the very wire that was supposed to help.
+
+It is also the exact shape the `merge-two-stores` skill warns about: a dead wire that goes
+quiet instead of announcing itself. A bridge whose failure looks identical to "nothing
+happened" cannot be trusted as a freshness signal. **Whatever else is built, the sync needs
+to state its own age at the point of reading** — the cheapest version being that any session
+reading the vault reports the age of `HEAD` alongside anything it quotes.
+
 ## Thesis
 
 Obsidian should be the window and the keyboard, and nothing more — and that is the design, not a concession. The vault is a filesystem: 636 plain-markdown records and a TSV on one disk on one Mac, with one sanctioned writer (bin/aria) and one human input channel (`## My notes` in today's Daily note). That is already the integration Carlos asked for. The CLI reads and writes it; launchd runs the 03:17 nightly sweep and the :09 hourly queue against it; an hourly render (`bin/aria-cloud-render.sh`) already carries an opted-in, credential-guarded, sha-stamped slice of it to Drive, and a daily cloud Routine already applies that slice to cloud memory — I read today's render two minutes after it landed. The two dead Obsidian MCP servers were never gaps in that wire; they were attempts to build a second wire to the same files through a GUI. So Obsidian.app's whole job is to render the files when Carlos wants to read prose and to be the editor he types `## My notes` in. It stays at zero community plugins, because every plugin is unsandboxed code with the reach of his login and the first thing that would make the machine's writes race a GUI; the Obsidian CLI stays unregistered, because it needs the app running and adds nothing to `cat`; Sync stays unbought, because no account exists (zero mail from obsidian.md, ever) and the render bridge already does the job for $0. What should change is not Obsidian's role but two properties of the store: its epistemics — the vault must stop being allowed to assert a blocker without a probe that can say "no longer true", the only class of note that has ever cost money, and the very research chain that produced this brief carried one (the shop it calls empty has ten live listings in its RSS feed today) — and its reach, because the cloud's window into the vault is currently 4 records of 636 behind a 32 KB cap in a shell script. Nothing here earns revenue; the first move says so out loud instead of implying otherwise.
