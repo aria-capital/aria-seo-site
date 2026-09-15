@@ -53,7 +53,7 @@ already in use. Any Bases recommendation must start from that file, not from a b
 **3. `.obsidian/plugins/` is absent — the zero-plugin finding is confirmed**, now from the
 vault's own tree rather than from a dated note. That part of the architecture stands.
 
-**4. The hourly sync has produced nothing for six days, and nothing announced it.**
+**4. The hourly sync has stopped, and nothing announced it.**
 
 The vault repo's remote HEAD is `87b38770`, dated **2026-09-07 10:14**. The newest Daily note
 is `2026-09-07.md`. PR #15 documents this bridge as syncing **hourly**.
@@ -62,11 +62,19 @@ is `2026-09-07.md`. PR #15 documents this bridge as syncing **hourly**.
 git ls-remote origin HEAD  ->  87b38770…  (2026-09-07 10:14 -0700)
 ```
 
-What this proves is narrow and should not be overstated: **the sync has committed nothing in
-six days.** It does not prove the Mac is off, or that the vault is unchanged — Carlos may
-simply not have run sessions. But it does mean **a cloud session reading this repo today
-would take a six-day-old snapshot as current truth**, which is this system's defining
-failure arriving through the very wire that was supposed to help.
+Re-measured 2026-09-15: **still `87b38770`, still 2026-09-07.** Eight days, two independent
+checks, no new commit. The first reading could have been a quiet weekend; two cannot.
+
+What this proves is narrow and should not be overstated: **the sync has committed nothing
+since 2026-09-07.** It does not prove the Mac is off, or that the vault is unchanged —
+Carlos may simply not have run sessions. But it does mean **a cloud session reading this
+repo takes a 2026-09-07 snapshot as current truth**, which is this system's defining failure
+arriving through the very wire that was supposed to help.
+
+*(The elapsed-day count is deliberately not written into this sentence. The first draft said
+"six days" and was wrong within 48 hours — a number with an expiry date, in a document about
+things with expiry dates. The HEAD date is the durable form: it stays true, and the reader
+subtracts.)*
 
 It is also the exact shape the `merge-two-stores` skill warns about: a dead wire that goes
 quiet instead of announcing itself. A bridge whose failure looks identical to "nothing
