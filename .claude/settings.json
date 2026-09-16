@@ -81,6 +81,7 @@
       "Bash(mkdir:*)",
 
       "Bash(python3 repo_state.py)",
+      "Bash(python repo_state.py)",
       "Bash(python3 -m pytest:*)",
       "Bash(python3 check_site_integrity.py)",
       "Bash(python3 check_article_corpus.py)",
