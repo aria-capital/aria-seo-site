@@ -918,13 +918,42 @@ Do not re-litigate these; they were measured, not assumed. Each is now held by a
     **peripheral** line at four times the rate it simultaneously names as **central**
     territory. The figures look transposed. Usual peripheral ceiling is ~10 mEq/hr (up to ~20,
     protocol-dependent), above which central access and continuous ECG are required.
-  - `fluid-electrolytes-nursing-guide-2026`: *"max concentration 40 mEq/100 mL peripheral.
-    Central line required for … concentrations above 40 mEq/100 mL"* — again self-cancelling,
-    naming one figure as both the peripheral maximum and the central threshold.
-    40 mEq/100 mL is 400 mEq/L, a central-line concentration.
+  - ~~`fluid-electrolytes-nursing-guide-2026`~~ — **FIXED 2026-09-07** ("Potassium: correct a
+    peripheral concentration that was 10x"). It now reads *"40 mEq/100 mL is a central,
+    critical-care concentration, never peripheral,"* which is correct. Verified on `main`
+    2026-09-15.
+  - **`fluid-electrolyte-balance-nursing-guide-2026` — NEWLY FOUND 2026-09-15, still live,
+    advertised, and never part of any audit.** It states: *"Maximum concentration via
+    peripheral IV: **40 mEq/100 mL**. Maximum concentration via central line: up to
+    **20 mEq/100 mL**."* Peripheral named as **twice** the central maximum — inverted, and
+    40 mEq/100 mL is 400 mEq/L, a central concentration. Its *rate* sentence on the same page
+    is correct (10 mEq/hour peripheral), which is why a rate-only check would pass it.
+    - **This is the sibling lesson repeating on the same defect class.** Three pages have
+      near-identical names — `fluid-electrolytes-`, `fluid-electrolyte-balance-`,
+      `fluids-electrolytes-`. One was audited and fixed; the other two were never searched.
+      Last touched 2026-09-02, by an unrelated email-capture commit.
+    - **The corpus now contradicts itself**: the fixed page says 40 mEq/100 mL is *never
+      peripheral*; this one calls it the peripheral maximum. So for this page the correct
+      value is no longer a judgement call about which number — the publisher's own corrected
+      wording is on the neighbouring page. It is still not changed here, because clinical
+      content is the owner's, but the usual "picking the number needs a clinician" objection
+      is weaker than it was.
   - Why these deserve the owner's minutes: rapid or concentrated IV potassium is a classic
     fatal medication error, and both pages read as safety boxes — precisely where a nurse
     looks for the number that decides whether a central line is needed.
+  - **Corpus-wide sweep, 2026-09-15 — and read its limit before trusting it.** All 1,462
+    pages were scanned for sentences naming both a peripheral and a central potassium figure.
+    Five pages state a comparable pair: **two are inverted** (the DKA page's rate, and the
+    `fluid-electrolyte-balance` page's concentration) and **three are correct**
+    (`fluid-electrolytes-`, `fluids-electrolytes-`, `iv-potassium-replacement-guide-icu-nurses-2026`).
+    - **The sweep's blind spot, stated because it is the same shape as the atropine miss.**
+      It required one *sentence* to contain both "peripheral" and "central". The
+      `fluid-electrolyte-balance` concentration error spans **two** sentences, so the sweep
+      did **not** catch it — it was found by a separate targeted grep, and the sweep would
+      have reported that page as clean on the strength of its correct rate sentence.
+      **So five-pages-checked is not a clean bill for the corpus**; a cross-sentence claim
+      is invisible to it. Any future potassium check must span sentences, and must be proven
+      against this page as its fixture.
 
   - **The exposure is now sampled, not closed.** ~120 pages carry ~1,187 explicit dose
     expressions, none clinically reviewed. A 7-class audit of 251 high-alert drug/dose pairs
