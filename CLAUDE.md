@@ -921,11 +921,24 @@ Do not re-litigate these; they were measured, not assumed. Each is now held by a
     `fix_inverted_potassium.py`, **by removal**).
   - **A rate with no route at all** — `diabetes-dka-hhs-nursing-guide-2026` read *"replace
     potassium aggressively (20–40 mEq/hr IV)"*: double the highest rate the site permits
-    anywhere else, no route, no monitoring. Fixed 2026-09-18 by
-    `fix_unqualified_potassium_rate.py`, again by removal. Its origin is visible one bullet
+    anywhere else, no route, no monitoring. Removed on `main` in 67b53040, which rewrote both
+    bullets to *"per facility protocol and the active order"*. Its origin is visible one bullet
     below it — *"add K+ to IV fluids (20–40 mEq per **liter**)"*, a concentration whose digits
     were reprinted as a rate. **Rate-for-concentration is the generator of this whole family.**
     40 mEq/L in a bag is routine; 40 mEq/hr into a vein is not.
+    - **Two sessions fixed this same line the same day, independently, and collided in a merge
+      conflict.** Both diagnosed it correctly and both chose removal; they differed only in
+      wording, and `main`'s landed first and was kept. Nothing was lost, but roughly an hour of
+      duplicated verification was — the cost CLAUDE.md keeps warning about and which no amount
+      of note-writing prevents, because prose cannot track same-day concurrency. **Before
+      starting a clinical repair, `git fetch origin main` and re-check that the defect is still
+      live.** The measurement is two seconds and it is the only thing that works.
+    - **One open question left by that edit, for the owner rather than a script.** 67b53040 also
+      replaced the *concentration* bullet with *"add K+ to IV fluids per protocol"*, deleting
+      *"20–40 mEq per liter"*. That figure was **correct** — the 2024 consensus states
+      20–30 mmol/L, and 20–40 mEq/L bags are standard. So this one removal took out useful,
+      accurate content rather than a false claim. Not a safety issue and not reverted; flagged
+      because standing priority 5 is about removing *false* statements, and this was not one.
   - **Removal beat correction, twice, and the second time it overruled a well-sourced number.**
     A verification pass produced a defensible replacement for the DKA/HHS bullet — *"begin at
     10 mEq/hr"*, the 2024 ADA/EASD consensus value, which survived three source-fetching
@@ -954,10 +967,14 @@ Do not re-litigate these; they were measured, not assumed. Each is now held by a
     `tests/test_fix_inverted_potassium.py` labels a figure peripheral/central by the nearest
     route word, and therefore **leaves a route-free rate unlabelled and reports it clean** —
     verified by running its own labeller against the live defect, which returned nothing.
-    `tests/test_fix_unqualified_potassium_rate.py` adds the complementary check: a **ceiling**
+    `tests/test_potassium_rate_ceiling.py` adds the complementary check: a **ceiling**
     on any potassium mEq/hr figure, route word or not. Each guard proves it fires on a planted
     violation, and the ceiling one asserts the other guard's blind spot so that widening it
-    fails the test and tells the reader this file became redundant.
+    fails the test and tells the reader this file became redundant. The ceiling guard is
+    deliberately **tied to no repair script** — it is a standing invariant over the corpus, so
+    it keeps working whoever makes the next edit and whatever wording they pick. (The repair
+    script written alongside it was deleted before merge: `main` had already made the edit, and
+    a second script for the same fix is worse than none.)
     - The ceiling was **measured, not chosen**: sweeping every potassium mEq/hr figure in the
       corpus found the legitimate ones all sitting at 10 or 20 and exactly one at 40 — the
       defect. Zero false positives against the healthy corpus, which is the repo's standing
