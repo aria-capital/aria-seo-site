@@ -909,51 +909,79 @@ Do not re-litigate these; they were measured, not assumed. Each is now held by a
     `tests/test_fix_arrest_amiodarone_dose.py`. The stable-VT clause in the same cell is
     correct and was deliberately left untouched.
 
-- **CLINICAL — OPEN, two verified IV potassium errors that need the owner.** Both survived
-  3/3 adversarial verification; both are on **advertised** pages. **Not changed**, because
-  the correct value is a range that varies by institutional protocol — picking the
-  replacement number is clinical judgement, not propagation of a published constant.
-  - `diabetic-ketoacidosis-nursing-guide-2026`: *"Replace K+ first (40 mEq/hr max
-    peripherally; >10 mEq/hr central)"*. The sentence contradicts itself — it caps a
-    **peripheral** line at four times the rate it simultaneously names as **central**
-    territory. The figures look transposed. Usual peripheral ceiling is ~10 mEq/hr (up to ~20,
-    protocol-dependent), above which central access and continuous ECG are required.
-  - ~~`fluid-electrolytes-nursing-guide-2026`~~ — **FIXED 2026-09-07** ("Potassium: correct a
-    peripheral concentration that was 10x"). It now reads *"40 mEq/100 mL is a central,
-    critical-care concentration, never peripheral,"* which is correct. Verified on `main`
-    2026-09-15.
-  - **`fluid-electrolyte-balance-nursing-guide-2026` — NEWLY FOUND 2026-09-15, still live,
-    advertised, and never part of any audit.** It states: *"Maximum concentration via
-    peripheral IV: **40 mEq/100 mL**. Maximum concentration via central line: up to
-    **20 mEq/100 mL**."* Peripheral named as **twice** the central maximum — inverted, and
-    40 mEq/100 mL is 400 mEq/L, a central concentration. Its *rate* sentence on the same page
-    is correct (10 mEq/hour peripheral), which is why a rate-only check would pass it.
-    - **This is the sibling lesson repeating on the same defect class.** Three pages have
-      near-identical names — `fluid-electrolytes-`, `fluid-electrolyte-balance-`,
-      `fluids-electrolytes-`. One was audited and fixed; the other two were never searched.
-      Last touched 2026-09-02, by an unrelated email-capture commit.
-    - **The corpus now contradicts itself**: the fixed page says 40 mEq/100 mL is *never
-      peripheral*; this one calls it the peripheral maximum. So for this page the correct
-      value is no longer a judgement call about which number — the publisher's own corrected
-      wording is on the neighbouring page. It is still not changed here, because clinical
-      content is the owner's, but the usual "picking the number needs a clinician" objection
-      is weaker than it was.
-  - Why these deserve the owner's minutes: rapid or concentrated IV potassium is a classic
-    fatal medication error, and both pages read as safety boxes — precisely where a nurse
-    looks for the number that decides whether a central line is needed.
-  - **Corpus-wide sweep, 2026-09-15 — and read its limit before trusting it.** All 1,462
-    pages were scanned for sentences naming both a peripheral and a central potassium figure.
-    Five pages state a comparable pair: **two are inverted** (the DKA page's rate, and the
-    `fluid-electrolyte-balance` page's concentration) and **three are correct**
-    (`fluid-electrolytes-`, `fluids-electrolytes-`, `iv-potassium-replacement-guide-icu-nurses-2026`).
-    - **The sweep's blind spot, stated because it is the same shape as the atropine miss.**
-      It required one *sentence* to contain both "peripheral" and "central". The
-      `fluid-electrolyte-balance` concentration error spans **two** sentences, so the sweep
-      did **not** catch it — it was found by a separate targeted grep, and the sweep would
-      have reported that page as clean on the strength of its correct rate sentence.
-      **So five-pages-checked is not a clean bill for the corpus**; a cross-sentence claim
-      is invisible to it. Any future potassium check must span sentences, and must be proven
-      against this page as its fixture.
+- **CLINICAL — IV potassium: four defects found, all four now CLOSED, across three sessions.**
+  Every one was on an **advertised** page, and each was found only after the previous one had
+  been fixed. The sequence is the entry worth keeping; the individual numbers are settled.
+  - **Inverted route pairs** — a PERIPHERAL limit stated at or above the CENTRAL limit beside
+    it. Central access exists so potassium can run faster and more concentrated than a
+    peripheral vein tolerates, so this is backwards rather than a protocol variant. Three
+    instances: a concentration on `fluid-electrolytes-nursing-guide-2026` (fixed 2026-09-07,
+    by correction), and a rate on `diabetic-ketoacidosis-nursing-guide-2026` plus a
+    concentration on `fluid-electrolyte-balance-nursing-guide-2026` (both fixed 2026-09-17 by
+    `fix_inverted_potassium.py`, **by removal**).
+  - **A rate with no route at all** — `diabetes-dka-hhs-nursing-guide-2026` read *"replace
+    potassium aggressively (20–40 mEq/hr IV)"*: double the highest rate the site permits
+    anywhere else, no route, no monitoring. Removed on `main` in 67b53040, which rewrote both
+    bullets to *"per facility protocol and the active order"*. Its origin is visible one bullet
+    below it — *"add K+ to IV fluids (20–40 mEq per **liter**)"*, a concentration whose digits
+    were reprinted as a rate. **Rate-for-concentration is the generator of this whole family.**
+    40 mEq/L in a bag is routine; 40 mEq/hr into a vein is not.
+    - **Two sessions fixed this same line the same day, independently, and collided in a merge
+      conflict.** Both diagnosed it correctly and both chose removal; they differed only in
+      wording, and `main`'s landed first and was kept. Nothing was lost, but roughly an hour of
+      duplicated verification was — the cost CLAUDE.md keeps warning about and which no amount
+      of note-writing prevents, because prose cannot track same-day concurrency. **Before
+      starting a clinical repair, `git fetch origin main` and re-check that the defect is still
+      live.** The measurement is two seconds and it is the only thing that works.
+    - **One open question left by that edit, for the owner rather than a script.** 67b53040 also
+      replaced the *concentration* bullet with *"add K+ to IV fluids per protocol"*, deleting
+      *"20–40 mEq per liter"*. That figure was **correct** — the 2024 consensus states
+      20–30 mmol/L, and 20–40 mEq/L bags are standard. So this one removal took out useful,
+      accurate content rather than a false claim. Not a safety issue and not reverted; flagged
+      because standing priority 5 is about removing *false* statements, and this was not one.
+  - **Removal beat correction, twice, and the second time it overruled a well-sourced number.**
+    A verification pass produced a defensible replacement for the DKA/HHS bullet — *"begin at
+    10 mEq/hr"*, the 2024 ADA/EASD consensus value, which survived three source-fetching
+    skeptics. It was **not used**: the house had just decided, on two sibling pages, to stop
+    printing a rate there at all, and a fourth variant would have been worse than no number.
+    Standing priority 5 and corpus consistency pointed the same way. If the owner ever wants
+    the guideline figure restored, that is one deliberate decision across all the potassium
+    pages, not a script's choice.
+  - **Guideline currency, for whoever revisits this.** The **2024** ADA/EASD/AACE/DTS/JBDS
+    consensus report REPLACED the 2009 statement that most secondary sources still echo: it
+    puts the insulin-hold threshold at K+ **>3.5** (not 3.3) and says replacement *"should
+    begin at a rate of 10 mmol/h"* — a STARTING rate, not a ceiling. For potassium, 1 mmol =
+    1 mEq. [2024 consensus](https://pmc.ncbi.nlm.nih.gov/articles/PMC11343900/) ·
+    [review](https://www.ccjm.org/content/92/3/152) ·
+    [Update 2026](https://pmc.ncbi.nlm.nih.gov/articles/PMC13190733/), which brackets 10–20.
+    Neither supports 40. **The 3.3 threshold is still live** at eight sites across four files
+    plus an `index.html` card — superseded but not an error (hold-low / resume-higher is
+    legitimate hysteresis), and changing one site alone would make a page order HOLD insulin
+    and START insulin for a K+ of 3.4. It needs one atomic commit, and it is a currency call,
+    not a lethal-number call.
+  - **Two guards now, because the first could not see the second defect class — and this is
+    the third time this exact failure has been paid for here.** The atropine repair bounded
+    the drug-name-to-dose gap at 60 chars and its guard reused the same regex, so the guard
+    went green while a wrong dose was live. The inverted-potassium sweep required one
+    *sentence* to hold both route words, so a two-sentence inversion read clean. Now:
+    `tests/test_fix_inverted_potassium.py` labels a figure peripheral/central by the nearest
+    route word, and therefore **leaves a route-free rate unlabelled and reports it clean** —
+    verified by running its own labeller against the live defect, which returned nothing.
+    `tests/test_potassium_rate_ceiling.py` adds the complementary check: a **ceiling**
+    on any potassium mEq/hr figure, route word or not. Each guard proves it fires on a planted
+    violation, and the ceiling one asserts the other guard's blind spot so that widening it
+    fails the test and tells the reader this file became redundant. The ceiling guard is
+    deliberately **tied to no repair script** — it is a standing invariant over the corpus, so
+    it keeps working whoever makes the next edit and whatever wording they pick. (The repair
+    script written alongside it was deleted before merge: `main` had already made the edit, and
+    a second script for the same fix is worse than none.)
+    - The ceiling was **measured, not chosen**: sweeping every potassium mEq/hr figure in the
+      corpus found the legitimate ones all sitting at 10 or 20 and exactly one at 40 — the
+      defect. Zero false positives against the healthy corpus, which is the repo's standing
+      method for validating a repair rule before trusting it.
+  - **What is still not true: none of this makes the pages clinically reviewed.** Four defects
+    in one drug, each found only by searching after the last one, is evidence about the
+    sampling, not a bill of health. The owner (an RN) should still eyeball these pages.
 
   - **The exposure is now sampled, not closed.** ~120 pages carry ~1,187 explicit dose
     expressions, none clinically reviewed. A 7-class audit of 251 high-alert drug/dose pairs
