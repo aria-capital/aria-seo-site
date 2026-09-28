@@ -102,3 +102,73 @@ def test_the_bound_still_refuses_to_cross_into_another_drugs_row():
     html = "<td>Atropine</td><td>bradycardia</td>" + ("<td>filler</td>" * 12) + "<td>0.5 mg</td>"
     _out, n = F.correct(html)
     assert n == 0
+
+
+# --- the RANGE blind spot: the same lesson, a third time -----------------------------------
+
+RANGE_ROW = ("<tr><td>Atropine</td><td>0.5–1 mg</td><td>Rapid IV push</td>"
+             "<td>Heart rate response within 1&ndash;2 min</td></tr>"
+             "<tr><td>Calcium gluconate</td><td>1&ndash;2 g</td><td>Slow</td>"
+             "<td>BP, ECG &mdash; bradycardia</td></tr>")
+
+
+def test_catches_the_range_form_that_escaped_the_second_run():
+    """Found live on iv-push-medication-safety-icu-nurses-2026 on 2026-09-28.
+
+    The guard matched a BARE `0.5 mg` and nothing else, so `0.5-1 mg` walked straight past it
+    and the corpus check reported clean for weeks. The table header reads "Typical IV Push
+    Dose" and the monitoring cell reads "Heart rate response within 1-2 min", so the indication
+    is unambiguously bradycardia, where five other pages on this site all say 1 mg.
+
+    This is the third recurrence of one defect, and each time the guard could not see its own
+    miss because it shared a blind spot with the repair. First the 60-char bound, then this."""
+    out, n = F.correct(RANGE_ROW)
+    assert n == 1, "the range form `0.5-1 mg` must be caught"
+    assert "<td>1 mg</td>" in out
+    assert "0.5–1 mg" not in out
+
+
+def test_the_shipped_pattern_really_was_blind_to_the_range():
+    """Crying-wolf control, inverted: prove the OLD pattern missed it, so this test file is
+    demonstrating a real repair rather than asserting something that was always true."""
+    import re
+    old = re.compile(r"(?is)(atropine\b.{0,120}?)(\b0\.5\s*mg\b)")
+    assert old.search(RANGE_ROW) is None, "the old pattern should NOT match the range form"
+    assert F.DOSE.search(RANGE_ROW) is not None, "the widened pattern must match it"
+    # and the widened pattern must still catch what the old one caught
+    bare = "<td>Atropine</td><td>bradycardia</td><td>0.5 mg</td>"
+    assert old.search(bare) is not None and F.DOSE.search(bare) is not None
+
+
+def test_range_variants_are_all_caught():
+    for form in ("0.5–1 mg", "0.5-1 mg", "0.5 to 1 mg", "0.5—1 mg"):
+        html = f"<td>Atropine</td><td>symptomatic bradycardia</td><td>{form}</td>"
+        _out, n = F.correct(html)
+        assert n == 1, f"{form!r} must be caught"
+
+
+def test_widening_did_not_start_matching_a_correct_one_mg_dose():
+    """The obvious way to break this: a pattern loose enough to rewrite an already-correct row."""
+    html = "<td>Atropine</td><td>symptomatic bradycardia</td><td>1 mg IV q3&ndash;5 min</td>"
+    out, n = F.correct(html)
+    assert n == 0 and out == html
+
+
+def test_no_article_carries_the_range_form_in_a_bradycardia_context():
+    """Corpus-wide, not file-scoped — the sibling lesson. A defect found in one page was never
+    searched for in its siblings, twice."""
+    import glob
+    import os
+    import re
+    repo = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    rng = re.compile(r"(?is)atropine\b.{0,120}?\b0\.5\s*(?:[-–—]|\s+to\s+)\s*1\s*mg\b")
+    offenders = []
+    for path in sorted(glob.glob(os.path.join(repo, "*.html"))):
+        with open(path, encoding="utf-8", errors="replace") as fh:
+            html = fh.read()
+        for m in rng.finditer(html):
+            near = html[max(0, m.start() - F.WINDOW):m.end() + F.WINDOW]
+            if F.CONTEXT.search(near):
+                offenders.append(os.path.basename(path))
+                break
+    assert offenders == [], f"atropine 0.5-1 mg live in a bradycardia context: {offenders}"

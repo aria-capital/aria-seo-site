@@ -57,7 +57,25 @@ from safe_write import safe_write_html
 # 120 was chosen by measurement, not taste: sweeping the bound from 60 to 200 over the whole
 # corpus surfaces exactly one additional match (the one above) and nothing else, so there is
 # no false-positive cost to the wider window and no reason to go further.
-DOSE = re.compile(r"(?is)(atropine\b.{0,120}?)(\b0\.5\s*mg\b)")
+#
+# THE SECOND BLIND SPOT, found 2026-09-28 — the same lesson, a third time.
+# The pattern matched a BARE `0.5 mg` and nothing else, so it walked straight past a RANGE:
+#   <td>Atropine</td><td>0.5–1 mg</td>   (iv-push-medication-safety-icu-nurses-2026)
+# live on an advertised page, in a table whose header reads "Typical IV Push Dose" and whose
+# monitoring cell reads "Heart rate response within 1–2 min" — unambiguously the bradycardia
+# indication, where five other pages on this site all say 1 mg. The guard reported the corpus
+# clean the whole time, because `\b0\.5\s*mg\b` cannot match "0.5–1 mg".
+#
+# Widened by measurement, exactly as the 120 was. Scanning the whole corpus:
+#   shipped pattern ............ 0 matches   (blind)
+#   + range form ............... 1 match     (the cell above), 0 false positives
+#   + range form + wider CONTEXT 1 match     (identical — so CONTEXT was never the problem;
+#                                             a neighbouring row already says "bradycardi")
+# CONTEXT is therefore left exactly as it was: the minimal change is the correct one, and
+# widening a guard further than its measurement justifies is how false positives arrive.
+# There is also no bare `0.5 mg` atropine anywhere the widened guard skips, so nothing that
+# should be corrected is being left behind by the context filter.
+DOSE = re.compile(r"(?is)(atropine\b.{0,120}?)(\b0\.5\s*(?:(?:[-–—]|\s+to\s+)\s*1\s*)?mg\b)")
 CONTEXT = re.compile(r"(?i)brady|heart block|symptomatic|acls|algorithm|pacing|code blue|asystole")
 WINDOW = 300
 
