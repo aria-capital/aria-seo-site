@@ -909,21 +909,23 @@ Do not re-litigate these; they were measured, not assumed. Each is now held by a
     `tests/test_fix_arrest_amiodarone_dose.py`. The stable-VT clause in the same cell is
     correct and was deliberately left untouched.
 
-- **CLINICAL — OPEN, two verified IV potassium errors that need the owner.** Both survived
-  3/3 adversarial verification; both are on **advertised** pages. **Not changed**, because
-  the correct value is a range that varies by institutional protocol — picking the
-  replacement number is clinical judgement, not propagation of a published constant.
-  - `diabetic-ketoacidosis-nursing-guide-2026`: *"Replace K+ first (40 mEq/hr max
-    peripherally; >10 mEq/hr central)"*. The sentence contradicts itself — it caps a
-    **peripheral** line at four times the rate it simultaneously names as **central**
-    territory. The figures look transposed. Usual peripheral ceiling is ~10 mEq/hr (up to ~20,
+- **CLINICAL — the IV potassium items are CLOSED. Kept for the method, not as open work.**
+  All three were removed in `09a3ba20` (2026-09-16, `fix_inverted_potassium.py` +
+  `tests/test_fix_inverted_potassium.py`) and on `fluid-electrolytes-` earlier on 09-07.
+  Re-measured on `main` 2026-09-19: no peripheral/central potassium contradiction survives on
+  any of the three pages. **This bullet sat marked OPEN for three days after the fix landed** —
+  the same staleness this file keeps warning about, so treat the state below as history.
+  - ~~`diabetic-ketoacidosis-nursing-guide-2026`~~ — **FIXED**: *"Replace K+ first (40 mEq/hr max
+    peripherally; >10 mEq/hr central)"*. The sentence contradicted itself — it capped a
+    **peripheral** line at four times the rate it simultaneously named as **central**
+    territory. The figures were transposed. Usual peripheral ceiling is ~10 mEq/hr (up to ~20,
     protocol-dependent), above which central access and continuous ECG are required.
   - ~~`fluid-electrolytes-nursing-guide-2026`~~ — **FIXED 2026-09-07** ("Potassium: correct a
     peripheral concentration that was 10x"). It now reads *"40 mEq/100 mL is a central,
     critical-care concentration, never peripheral,"* which is correct. Verified on `main`
     2026-09-15.
-  - **`fluid-electrolyte-balance-nursing-guide-2026` — NEWLY FOUND 2026-09-15, still live,
-    advertised, and never part of any audit.** It states: *"Maximum concentration via
+  - ~~`fluid-electrolyte-balance-nursing-guide-2026`~~ — **FIXED in `09a3ba20`.** Found
+    2026-09-15, live and advertised, never part of any audit. It stated: *"Maximum concentration via
     peripheral IV: **40 mEq/100 mL**. Maximum concentration via central line: up to
     **20 mEq/100 mL**."* Peripheral named as **twice** the central maximum — inverted, and
     40 mEq/100 mL is 400 mEq/L, a central concentration. Its *rate* sentence on the same page
@@ -955,16 +957,29 @@ Do not re-litigate these; they were measured, not assumed. Each is now held by a
       is invisible to it. Any future potassium check must span sentences, and must be proven
       against this page as its fixture.
 
-  - **The exposure is now sampled, not closed.** ~120 pages carry ~1,187 explicit dose
-    expressions, none clinically reviewed. A 7-class audit of 251 high-alert drug/dose pairs
-    (2026-09-07, 19 agents, adversarial verification on every candidate) produced **3
-    confirmed errors, all high-severity**: the amiodarone item above and the two potassium
-    items. Five classes — vasoactive, sedation, paralytics/reversal, anticoagulation/cardiac,
-    endocrine/renal — returned nothing, which is a real negative result but covers only the
-    drug/dose pairs the extractor matched. It is not a clean bill for all 1,187 figures. A
-    verifier also flagged `amiodarone-vs-lidocaine-icu-nurses-2026` and
-    `wide-complex-tachycardia-vt-icu-nurses-2026` as mentioning arrest dosing without being
-    reached by this pass.
+  - **The exposure is STILL sampled, not closed — and the fraction read is now measurable.**
+    The advertised, dose-bearing set is what matters; count it rather than trusting a number
+    here: `for f in $(grep -lEi '[0-9][0-9.]*[[:space:]]*(mg|mcg|mEq|units?)\b' *.html); do
+    grep -q 'content="noindex' "$f" || echo "$f"; done | wc -l`.
+    - **2026-09-07 pass**: a 7-class audit of 251 high-alert drug/dose *pairs* (19 agents,
+      adversarial verification on every candidate) produced 3 confirmed errors. Five classes
+      returned nothing — a real negative result, but it covers only the pairs the extractor
+      matched, which is the whole problem.
+    - **2026-09-19 pass** (`fix_verified_dose_errors.py`): dropped the extractor entirely and
+      had agents READ pages end to end. About half the advertised dose pages were read this
+      way — 1,091 individual dose expressions — yielding 25 candidates, 16 verified, **9
+      survived, 10 edits**. Coverage was cut short by a session rate limit, so **roughly half
+      that set has still never been read by anything but a regex**, and the cross-page
+      contradiction, error-shape and never-audited-page lanes did not run at all.
+    - **Two of the five candidates reported as high-severity were FALSE POSITIVES**, killed by
+      the adversarial pass, and both failures are instructive: adenosine "if unstable" is
+      guideline-consistent (the AHA unstable-tachycardia box says *"if regular narrow complex,
+      consider adenosine"*), and DKA potassium at 20–40 mEq/hr for K+ <3.3 is published for
+      that exact indication. **Both would have been "obvious" errors to a reader applying the
+      textbook simplification.** Do not skip the refute pass because a finding looks clear.
+    - `amiodarone-vs-lidocaine-icu-nurses-2026` and `wide-complex-tachycardia-vt-icu-nurses-2026`
+      were flagged in 2026-09-07 as never reached, and the 09-19 lane assigned to them **died
+      on the rate limit**, so they are still unread. They are the first thing to pick up.
 
 - **`seo_index_sync.py` would add 852 orphan cards** to `index.html` on its next run.
   Whether those articles should be linked from the homepage at all is a curation decision
