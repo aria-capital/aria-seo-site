@@ -1023,6 +1023,17 @@ Do not re-litigate these; they were measured, not assumed. Each is now held by a
     - Rebuild the inventory from the sitemap with the wider unit set
       (`mg|mcg|g|units|mEq|mmol|mL/kg|mmHg|J|cmH2O|°C`) before the next sweep, or it will
       re-measure the same blind spot and report the same reassuring number.
+    - **Measured 2026-09-28, and it is worse than the critic estimated: the narrow unit set
+      (`mg|mcg|mEq|units`) selects ~115 advertised pages; the wide set selects ~272.** More
+      than half the clinical surface was outside the denominator. Re-derive rather than
+      trusting those two numbers — they move whenever the sitemap does:
+      count advertised, non-noindex pages matching each unit set, and compare.
+    - A crude cross-page probe over the newly-surfaced equipment numbers (defib joules, cuff
+      pressure, Vt mL/kg, plateau, ICP/CPP, TTM) found **nothing real** — but its precision was
+      poor enough that the negative means little: it split "Below ~20 cmH2O" and ">30 cmH2O"
+      into a fake disagreement when all three pages agree on 20–30, and it read a stethoscope
+      page's "84c" as a temperature target. Do not record equipment settings as checked on the
+      strength of it; they need reading, not grepping, like everything else here.
     - Still never audited for their own errors, and live: **74 noindex pages carrying ~300 dose
       lines** (noindex means unadvertised, not unserved — a direct link still reaches them).
       `pediatric-medication-dosing-guide-2026` is the one to start with: its "Maximum **Single**
