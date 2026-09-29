@@ -465,6 +465,29 @@ keyboard, and do not treat it as a capability gap to route around.
   no mount — and it works while Obsidian is closed. Verified independently from the cloud, not
   taken on the note's word: the private repo exists and its `pushed_at` was seconds behind the
   Drive export's render time, so the wire was live at the moment of checking.
+  - **THE PUSH HAS BEEN DEAD SINCE 2026-09-07. Do not repeat the paragraph above as current.**
+    Measure it in two seconds before saying anything about the vault's state:
+    `git -C /home/user/aria-brain fetch --depth=1 origin main && git -C /home/user/aria-brain log -1 --format=%ci origin/main`.
+    If that date is not recent, the phone is reading a frozen vault and everything a session
+    reads from the GitHub copy is that old too.
+  - **What the outage proves, and it is the useful part: every automated leg works and only the
+    credentialed one is down.** Measured 2026-09-28 — the Mac still renders `ARIA-CLOUD-MAP.md`
+    to Drive daily (that day's carried `Rendered 2026-09-28 07:03`), and a *scheduled cloud
+    task* still applies it to the memory store daily, with an unbroken one-per-day
+    `ARIA-CLOUD-APPLIED-prev-*.md` series in `ARIA_BUS`. So the Mac is alive, launchd is
+    running, and Drive is live. Only `git push` is failing, which points at the credential and
+    nothing else. Do not re-diagnose this from scratch; re-measure the one date above.
+  - **Note what the Drive bridge is NOT, before proposing it as the fallback.** That same
+    export reported `156 record(s) marked cloud: true · 0 published IN FULL · 156 too big to
+    carry in full · vault holds 786 records total`, against a 49,152-byte store limit. The
+    cloud map carries names and one-line descriptions, not content. Git is the only
+    full-fidelity channel to the vault, which is exactly why its being down matters.
+  - **Stop writing `RUN-ME` files for this one.** Two were left in `ARIA_BUS`
+    (`RUN-ME-brain-sync-is-dead-20260913.md`, then `-20260916.md`) plus a ready-to-run
+    `aria-fix-brain-sync-20260916.sh`, and twelve days later the push was still dead. The
+    channel is not the bottleneck and a third file will not change that: re-authenticating is
+    an account action, which the standing order puts permanently in the owner's hands. Tell him
+    directly, in chat, in one line — not in a file he has not opened.
   - The sync deliberately excludes `state/`, `staging/`, `scratchpad/`, `tmp*`, `bin/` (those
     scripts name credential paths), `.claude/`, and `*.bak-*`, and it scans every carried file
     for credential VALUE shapes, withholding hits by name in `WITHHELD.md`. **So the GitHub
@@ -977,9 +1000,68 @@ Do not re-litigate these; they were measured, not assumed. Each is now held by a
       consider adenosine"*), and DKA potassium at 20–40 mEq/hr for K+ <3.3 is published for
       that exact indication. **Both would have been "obvious" errors to a reader applying the
       textbook simplification.** Do not skip the refute pass because a finding looks clear.
-    - `amiodarone-vs-lidocaine-icu-nurses-2026` and `wide-complex-tachycardia-vt-icu-nurses-2026`
-      were flagged in 2026-09-07 as never reached, and the 09-19 lane assigned to them **died
-      on the rate limit**, so they are still unread. They are the first thing to pick up.
+    - ~~`amiodarone-vs-lidocaine-icu-nurses-2026` and `wide-complex-tachycardia-vt-icu-nurses-2026`
+      were flagged in 2026-09-07 as never reached~~ — **both read 2026-09-28**; the lidocaine
+      repeat-bolus omission on the first is fixed (`fix_sibling_completion_errors.py`).
+    - **2026-09-28 pass**: ran the four lanes the 09-19 rate limit killed, then a completeness
+      critic, then re-read the pages that had never been read. Corrections shipped on the
+      `clinical-dose-errors` branch. Count them from the tree, not from here:
+      `ls fix_*clinical*.py fix_*dose*.py fix_parkland*.py fix_sibling*.py`.
+
+  - **THE FINDING THAT MATTERS MOST FROM 09-28: the INVENTORY was the limit, not the corpus.**
+    Every pass until then measured "the advertised dose-bearing pages" as a 118-page list built
+    by one regex, and reported coverage as a fraction of it. The critic checked the list itself
+    and found **16 advertised, dose-bearing pages that were never in it** — all 16 were in
+    `sitemap.xml` the whole time, so the regex dropped them; plus ~94 advertised pages whose
+    clinical numbers carry no drug unit at all (vent settings, defib joules, ICP/CPP, pressures,
+    Parkland), which no inventory has ever contained. The first error found on one of those
+    never-inventoried pages was found on **first contact**.
+    - So "we have read N% of the dose pages" was answering a narrower question than everyone
+      read it as — the same shape as the `html_severity()` lesson above, one level up: there
+      the metric was too narrow, here the *denominator* was. **When a sweep reports coverage,
+      audit how its population was built before believing the percentage.**
+    - Rebuild the inventory from the sitemap with the wider unit set
+      (`mg|mcg|g|units|mEq|mmol|mL/kg|mmHg|J|cmH2O|°C`) before the next sweep, or it will
+      re-measure the same blind spot and report the same reassuring number.
+    - Still never audited for their own errors, and live: **74 noindex pages carrying ~300 dose
+      lines** (noindex means unadvertised, not unserved — a direct link still reaches them).
+      `pediatric-medication-dosing-guide-2026` is the one to start with: its "Maximum **Single**
+      Dose" column holds a *daily* max in 3 of 7 rows (acetaminophen `75 mg/kg/day`, ceftriaxone
+      `4 g/day`, ibuprofen both). No number is wrong and every cell self-labels `/day` or
+      `/dose`, so the defect is the header, not the content.
+
+  - **"Needs a clinician" is right for a range and wrong for a lone outlier — check which you
+    have.** Two real findings were nearly lost on 09-28 by filing them as owner-decisions. The
+    test is not how clinical the content feels, it is whether the *publisher has already
+    chosen*: if the site states the figure correctly elsewhere, the only question left is which
+    statement is the outlier, and that is answered by counting, not by judgement. Reserve
+    "needs a clinician" for where the right value is a protocol-dependent range the site does
+    not settle — the IV potassium items, and the sodium-correction ceiling below.
+    - **OPEN, and genuinely the owner's**: the hyponatremia correction ceiling reads 8–10, 8–12
+      and 10–12 mEq/L per 24 h across four advertised pages with no majority — on the same three
+      near-identically-named siblings (`fluid-electrolytes-`, `fluid-electrolyte-balance-`,
+      `fluids-electrolytes-`) that carried the potassium errors. All three values are published,
+      so this is a consistency defect, not a wrong number; picking one is his call. Over-rapid
+      correction causes osmotic demyelination, which is irreversible.
+    - Also open and unsettled by the corpus: hepatorenal albumin `1 g/kg/day` printed as an
+      open-ended daily dose (the maintenance figure appears nowhere on the site), the naloxone
+      titration dilution (same), and 3% saline central-vs-peripheral (split 3 pages to 2, and
+      the stricter wording is defensible institutional policy rather than an error).
+
+  - **Two kinds of guard, and the second kind is worth reaching for more often.** Most clinical
+    guards here ban a known-wrong string, so they only ever catch the defect already found. Two
+    added on 09-28 ban a *class* instead and need no drug list: one fails any
+    "V mL over N hr (R mL/hr)" worked example whose own numbers do not divide to the rate it
+    prints, the other fails any DKA page whose insulin-resume threshold contradicts its own
+    start row. Both keep working on pages nobody has audited and on pages that do not exist yet.
+    A class guard also stays honest about *which* published convention a page picked — the DKA
+    one has a test asserting that a page consistently using 3.5 must PASS, because it measures
+    self-consistency, not agreement with a number chosen here.
+    - Measure the shape corpus-wide before shipping it, and be willing to throw one away. A
+      chained-multiplication checker was written the same day and **not shipped**: 11 instances,
+      9 correct, and both "failures" were the checker's fault (`3x12 = 3 days worked` grabbed a
+      phrase; `293/250 x 5 = 5.9` is correct once the leading division is read). A 2-in-11
+      false-positive rate on healthy pages is a guard that gets trained away.
 
 - **`seo_index_sync.py` would add 852 orphan cards** to `index.html` on its next run.
   Whether those articles should be linked from the homepage at all is a curation decision
@@ -990,6 +1072,34 @@ Do not re-litigate these; they were measured, not assumed. Each is now held by a
   rewrites the live sitemap with today's dates on every article you happen to have touched.
   This bit during the block-repair work and had to be reverted. It has no `--dry-run`.
   Use `read_base_url()` if you only want to check the host.
+- **A FOURTH truncation class was found 2026-09-28, and it is the one that mattered.** Every
+  page carrying the closing attribution paragraph `<p style="font-size:0.85rem;color:#888">`
+  is cut mid-sentence with the `<p>` never closed — **27 pages, zero well-formed**, 14 of them
+  advertised. Count them, don't trust that number:
+  `python3 - <<'EOF'` … regex `<p style="font-size:0\.85rem;color:#888">(.*?)(</p>|<div|<hr)` …
+  or just grep for the style string and look for the missing `</p>`.
+  - **Two of them were cutting off a crisis hotline.** `icu-nurse-burnout-signs-prevention-2026`
+    stopped at *"please contact the 988 Suicide"*; `nurse-burnout-recovery-plan-2026` stopped at
+    *"If you are in crisis, please contact the"* — naming no resource at all, on a page where
+    `988` appeared zero times. Both are fixed (`fix_truncated_crisis_resources.py`) by
+    propagating the site's own *"988 Suicide and Crisis Lifeline (call or text 988)"*, which for
+    the first page was already on that same page eleven lines above the cut.
+  - **Why no gate saw it, and this is the reusable part.** Three green checks looked straight at
+    these pages: `html_severity()` doesn't count `<p>` as a block tag; the corpus baseline has no
+    entry and "no entry" is judged by that same blind metric; and the disclaimer test asks
+    whether disclaimer LANGUAGE is *present*, not whether it is *complete*. It was present, and
+    cut in half. **Presence and completeness are different questions and only one was asked** —
+    the `html_severity()` lesson a third time, and the first time it hid something that could
+    hurt a person rather than a ranking.
+  - **The other 25 are OPEN and are mostly legal/tax/practice disclaimers** (*"does not
+    constitute tax advice. Con"*, *"Always consult a licensed tax professional who special"*).
+    Do **not** delete them to tidy the truncation: a cut disclaimer is still protective language
+    and standing priority 3 requires one. Completing them means writing new copy, which is the
+    owner's. No sibling and no git revision carries a complete version — they were truncated
+    before entering the repo, same as the three below.
+  - Only the crisis subclass is guarded by a test, deliberately. A guard red on all 27 would be
+    red on every build, and this file is explicit about what happens next: everyone learns to
+    ignore it, which is the failure mode that let the original truncation bug run for months.
 - **Three articles are still cut off mid-word**, and no revision in git history has the rest:
   `best-icu-nursing-books-2026` ("…rather than a study gui"),
   `new-grad-nurse-financial-survival-guide` ("…Employer match captured. Loans"),
