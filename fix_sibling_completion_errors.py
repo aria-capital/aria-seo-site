@@ -43,7 +43,7 @@ caution applied to the wrong category.
 
 2. DKA INSULIN-HOLD THRESHOLD — a protocol box that contradicts its own next line.
 
-   diabetes-dka-hhs-nursing-guide-2026, consecutive list items:
+   diabetes-dka-hhs-nursing-guide-2026, consecutive list items, as they read when this was found:
        K+ <3.3 mEq/L: HOLD insulin; replace potassium aggressively (20-40 mEq/hr IV)
                       until K+ >=3.5, THEN start insulin
        K+ 3.3-5.0:    start insulin; add K+ to IV fluids (20-40 mEq per liter)
@@ -68,10 +68,26 @@ caution applied to the wrong category.
    HARM: modest and in the delaying direction - insulin withheld between 3.3 and 3.5 - but the
    contradiction itself is the hazard, in a protocol box a nurse reads under time pressure.
 
-   NOT CHANGED, deliberately: "20-40 mEq/hr IV" in the same sentence. That rate was flagged in
-   an earlier pass and the adversarial review REFUTED it - 20-40 mEq/hr is published for this
-   exact indication (K+ <3.3 in DKA, central access, continuous ECG). Correcting a figure that
-   survived refutation would be re-introducing an error.
+   NOT CHANGED BY THIS SCRIPT, deliberately: "20-40 mEq/hr IV" in the same sentence. That rate
+   was flagged in an earlier pass and the adversarial review REFUTED it - 20-40 mEq/hr is
+   published for this exact indication - so correcting it here would have re-introduced an error.
+
+   POSTSCRIPT, and it is the interesting part. While this branch was open, commit 67b53040
+   landed on MAIN and deleted that rate anyway, replacing it with "per facility protocol and
+   the active order". Two sessions edited one sentence on the same day, which is the hazard
+   CLAUDE.md keeps warning about - and here the two edits turned out to compose rather than
+   collide, because they were answering different questions:
+
+       this script:  is 3.5 the threshold this page means?   (no - the page says 3.3 five times)
+       67b53040:     should a bare hourly potassium rate be printed with NO access route?
+                     (no - peripheral vs central is what makes concentrated K+ dangerous,
+                      and deferring to the order beats choosing between published ranges)
+
+   The merge takes both. The sentence now reads "replace potassium per facility protocol and
+   the active order until K+ >=3.3, THEN start insulin": no unqualified rate, and no
+   self-contradiction. Neither session had to lose its finding, but only because the conflict
+   was READ before it was resolved - taking either side wholesale would have silently dropped
+   the other's correction.
 
 WHAT IS STILL LEFT FOR THE OWNER, and why these two are different
 Three findings from the same sweep are NOT here because the site does not settle them:

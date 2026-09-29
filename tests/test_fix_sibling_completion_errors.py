@@ -176,9 +176,31 @@ def test_the_dka_guard_does_not_care_which_published_threshold_a_page_picks():
     assert resume and start and resume.group(1) == start.group(1), "a self-consistent page must pass"
 
 
-def test_the_refuted_potassium_replacement_rate_was_left_alone():
-    """20-40 mEq/hr for K+ <3.3 in DKA survived an adversarial refute pass in an earlier round.
-    Re-'correcting' a figure that was verified correct would ship a new error."""
+def test_the_dka_potassium_rate_is_deferred_to_protocol_not_reprinted():
+    """This assertion was inverted mid-flight by a concurrent session, and the history is worth
+    keeping because it is the repo's "several sessions land work here on the same day" hazard
+    playing out on one sentence.
+
+    It originally read `assert "20-40 mEq/hr IV" in text`, guarding a figure that had SURVIVED an
+    adversarial refute pass (20-40 mEq/hr is published for K+ <3.3 in DKA), on the principle that
+    re-correcting a verified-correct number ships a new error. While this branch was open, commit
+    67b53040 landed on main and removed that rate anyway — replacing it with "per facility
+    protocol and the active order".
+
+    That was not a contradiction of the refute pass and the guard is not being weakened to
+    accommodate it. The refute pass asked "is 20-40 mEq/hr wrong?" — it is not. The other session
+    asked a different question: should a bare hourly potassium rate be printed with no access
+    route at all, when the peripheral-vs-central distinction is the thing that makes concentrated
+    potassium dangerous and is the defect class this corpus has already been bitten by three
+    times. Deleting the number defers to the order rather than choosing between published ranges,
+    which is exactly standing priority 5.
+
+    So the invariant worth holding is not "that number is present" but "no unqualified hourly
+    potassium rate is printed here", which is strictly stronger than what this test used to say.
+    """
     with open(os.path.join(REPO, "diabetes-dka-hhs-nursing-guide-2026.html"), encoding="utf-8") as fh:
         text = fh.read()
-    assert "20–40 mEq/hr IV" in text
+    assert "per facility protocol and the active order" in text
+    assert not re.search(r"\d+\s*[-–]\s*\d+\s*mEq/hr", text), (
+        "an unqualified hourly potassium rate is back on the DKA page"
+    )
