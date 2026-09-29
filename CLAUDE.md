@@ -1028,6 +1028,17 @@ Do not re-litigate these; they were measured, not assumed. Each is now held by a
       than half the clinical surface was outside the denominator. Re-derive rather than
       trusting those two numbers — they move whenever the sitemap does:
       count advertised, non-noindex pages matching each unit set, and compare.
+    - **The same shape bit the DISCLAIMER gate, and it took a repair to expose it.**
+      `is_clinical()` counts dose expressions, and `iv-magnesium-replacement-icu-2026` wrote
+      its doses as *"1–2 **grams** per gram of deficit"* — spelled out, so the detector scored
+      it non-clinical and the corpus disclaimer test passed while an **advertised IV magnesium
+      dosing page carried no disclaimer at all**. Nobody found this by looking; it surfaced
+      because an unrelated repair rewrote the phrase as "1–2 g IV per dose" and the test went
+      red on the next run. Standing priority 3 had a hole in it for as long as that page has
+      existed. Swept afterwards: zero other pages sit in that blind spot, so this was the only
+      one — but the *lesson* is that a gate defining its own population by token shape cannot
+      see what spells the token differently, which is the `html_severity()` and
+      118-page-inventory failure a third and fourth time.
     - A crude cross-page probe over the newly-surfaced equipment numbers (defib joules, cuff
       pressure, Vt mL/kg, plateau, ICP/CPP, TTM) found **nothing real** — but its precision was
       poor enough that the negative means little: it split "Below ~20 cmH2O" and ">30 cmH2O"
