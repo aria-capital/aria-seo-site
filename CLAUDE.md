@@ -3,9 +3,52 @@
 Read this before changing anything. It records what broke here, why, and the rules that
 keep it from breaking again. Most of it was learned the expensive way.
 
+## THE SITE IS OFFLINE. Read this before anything else.
+
+**Measured 2026-10-01: GitHub Pages is DISABLED on this repo and every page 404s.**
+
+```
+curl -s -o /dev/null -w "%{http_code}\n" https://aria-capital.github.io/aria-seo-site/   # 404
+curl -s https://api.github.com/repos/aria-capital/aria-seo-site | grep has_pages          # false
+```
+
+The repo is **public**, so this is not a visibility problem — Pages itself is switched off.
+`has_pages: false` is the whole diagnosis. All ~1,462 articles are unreachable; so are
+`sitemap.xml`, the project `robots.txt` and the project `ads.txt`. It has been down at least
+since 2026-09-28 and was still down on 10-01.
+
+**Three things make this the first thing a session must know:**
+
+1. **Every "the deployed site is healthy" claim further down this file is now FALSE.** They
+   were true when written (verified live 08-19, 08-20, 09-02) and are kept for their method,
+   not their verdict. `check_live_site.py` reports the real state in ten seconds — run it.
+2. **The alarm built for exactly this was off.** The "Nightly live-site monitor" Routine
+   (`trig_01V6qjgm4ZYaDTqREHvaB66i`) is `enabled: false`, last ran **2026-09-15**, and its
+   `next_run_at` of 2026-09-16 never happened. No `ended_reason` and no `suspension_reason`,
+   which the trigger API documents as *user-paused*. So the site went dark and the one
+   instrument that would have said so was switched off. A monitor that is disabled is
+   indistinguishable, from the outside, from a monitor reporting all-clear — this file's
+   "a guard nobody runs is not a guard" lesson, now at the Routine layer.
+3. **The host root has been repurposed.** `https://aria-capital.github.io/` serves 200, but it
+   is a *different business* — "Websites and Google visibility for Mohave County trades". That
+   is the separate `aria-capital.github.io` repo, and nothing about it requires this project's
+   Pages to be off. **It may still mean the takedown was deliberate.** Do not assume either way.
+
+**DO NOT RE-ENABLE PAGES.** Turning it back on publishes ~1,462 clinical pages to the web.
+That is the standing order's hard line — publish, never unattended — and it is one toggle in
+Settings → Pages that only the owner should flip. The precedent in this file is the night a
+session nearly delisted the only product that ever sold, over a problem that did not exist:
+urgency is when verification matters most. Ask him whether the site is meant to be down before
+treating it as an outage.
+
+What is NOT broken, measured the same day: the Mac still renders `ARIA-CLOUD-MAP.md` to Drive
+(re-rendered 2026-10-01 20:34) and the daily cloud-apply task still runs. This is isolated to
+this repo's Pages.
+
 ## Start here
 
 **Run `python repo_state.py` first. Believe it over this file.**
+**Then run `python check_live_site.py` — the repo being clean says nothing about it serving.**
 
 This document has been substantially wrong at the start of three consecutive sessions —
 not through carelessness, but because it is written as a snapshot and read as current
@@ -873,7 +916,13 @@ Do not re-litigate these; they were measured, not assumed. Each is now held by a
 - **All 940 advertised pages are crawler-reachable from the homepage** within 3 clicks
   (link-graph BFS, 2026-08-20). The plan-of-record's "make the best articles reachable"
   goal is achieved; internal linking needs no further work.
-- **The DEPLOYED site is measured, not assumed.** `check_live_site.py` (2026-08-19) is a
+- **The DEPLOYED site is measured, not assumed — and as of 2026-10-01 what it measures is a
+  404 on every path. See the banner at the top of this file before reading the rest of this
+  bullet, which describes a site that is currently not being served.** The checker worked
+  exactly as designed: it was the thing that caught this, on a run nobody had scheduled,
+  because its own nightly Routine had been paused since 09-15. Everything below is still true
+  about the INSTRUMENT; none of it is still true about the deployment.
+  `check_live_site.py` (2026-08-19) is a
   read-only, stdlib-only checker that fetches the live GitHub Pages deployment and fails
   loudly on what no repo-side gate can see: a stale or truncated deploy (homepage and a
   rotating article sample byte-compared against the committed files), sitemap drift, a
